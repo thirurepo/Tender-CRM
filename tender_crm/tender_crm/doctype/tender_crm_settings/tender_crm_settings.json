@@ -1,0 +1,116 @@
+{
+ "actions": [],
+ "creation": "2026-09-09 18:40:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "column_break_head",
+  "erpnext_company",
+  "quotation_section",
+  "advance_deal_on_quotation",
+  "quotation_deal_status",
+  "sales_order_section",
+  "link_sales_order_to_deal",
+  "column_break_so",
+  "close_deal_on_sales_order",
+  "won_deal_status"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "description": "Master switch for everything this app wires between Frappe CRM and ERPNext. Turn it off to disable the linkage without uninstalling the app.",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enable CRM ↔ ERPNext Linkage"
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Company that CRM deals are sold under. Used as the default on documents raised from a deal.",
+   "fieldname": "erpnext_company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "quotation_section",
+   "fieldtype": "Section Break",
+   "label": "On Quotation Submit"
+  },
+  {
+   "default": "1",
+   "description": "Move the deal to the status below when a quotation raised against it is submitted. Forward only — a deal already further along the pipeline is left where it is.",
+   "fieldname": "advance_deal_on_quotation",
+   "fieldtype": "Check",
+   "label": "Advance Deal Status"
+  },
+  {
+   "depends_on": "advance_deal_on_quotation",
+   "fieldname": "quotation_deal_status",
+   "fieldtype": "Link",
+   "label": "Deal Status After Quotation",
+   "options": "CRM Deal Status"
+  },
+  {
+   "fieldname": "sales_order_section",
+   "fieldtype": "Section Break",
+   "label": "On Sales Order Submit"
+  },
+  {
+   "default": "1",
+   "description": "Stamp the submitted sales order onto the CRM Deal it originated from, so the order is reachable from the deal without walking the quotation chain.",
+   "fieldname": "link_sales_order_to_deal",
+   "fieldtype": "Check",
+   "label": "Link Sales Order to Deal"
+  },
+  {
+   "fieldname": "column_break_so",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Close the deal as won when a sales order against it is submitted. Off by default — many teams close the deal by hand after collecting the advance.",
+   "fieldname": "close_deal_on_sales_order",
+   "fieldtype": "Check",
+   "label": "Close Deal as Won"
+  },
+  {
+   "depends_on": "close_deal_on_sales_order",
+   "fieldname": "won_deal_status",
+   "fieldtype": "Link",
+   "label": "Won Deal Status",
+   "options": "CRM Deal Status"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-09 18:40:00.000000",
+ "modified_by": "Administrator",
+ "module": "Tender CRM",
+ "name": "Tender CRM Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Sales Manager"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

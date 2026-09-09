@@ -1,0 +1,13 @@
+[pre_model_sync]
+
+[post_model_sync]
+# Order matters. The pipeline has to exist before anything is asked to point a
+# setting at one of its statuses, and the ERPNext link fields have to exist
+# before the integration is switched on and starts writing to them.
+tender_crm.patches.seed_tsi_deal_pipeline
+tender_crm.patches.seed_tsi_lead_statuses
+tender_crm.patches.seed_tsi_lost_reasons
+tender_crm.patches.seed_tsi_territories
+tender_crm.patches.add_erpnext_link_fields
+tender_crm.patches.configure_erpnext_crm_settings
+tender_crm.patches.seed_tender_crm_settings

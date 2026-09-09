@@ -1,0 +1,40 @@
+[
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Deal-tsi_erpnext_sales_order",
+  "dt": "CRM Deal",
+  "fieldname": "tsi_erpnext_sales_order",
+  "label": "Sales Order in ERPNext",
+  "fieldtype": "Data",
+  "read_only": 1,
+  "no_copy": 1,
+  "insert_after": "closed_date",
+  "description": "Set by Tender CRM when a sales order is submitted against this deal.",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Deal-tsi_erpnext_company",
+  "dt": "CRM Deal",
+  "fieldname": "tsi_erpnext_company",
+  "label": "Company",
+  "fieldtype": "Link",
+  "options": "Company",
+  "insert_after": "tsi_erpnext_sales_order",
+  "description": "ERPNext company this deal is sold under.",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Sales Order-crm_deal",
+  "dt": "Sales Order",
+  "fieldname": "crm_deal",
+  "label": "Frappe CRM Deal",
+  "fieldtype": "Data",
+  "read_only": 1,
+  "no_copy": 1,
+  "insert_after": "customer_name",
+  "description": "Set by Tender CRM when this order is submitted.",
+  "module": "Tender CRM"
+ }
+]
