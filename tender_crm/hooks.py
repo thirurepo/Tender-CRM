@@ -29,6 +29,13 @@ required_apps = ["frappe/crm"]
 # Purely additive: crm's own /crm route (apps/crm/crm/hooks.py) is untouched
 # and keeps working exactly as before.
 website_route_rules = [
+    # Frappe's default www-page resolution matches a bare path straight to a
+    # same-named file (this is how crm's own bare /crm works, with no rule at
+    # all — /crm literally matches crm/www/crm.py). That only works when the
+    # URL and the file share a name; ours deliberately don't (tsi-crm vs
+    # tsi_crm.py, for a nicer URL), so the bare path needs its own rule too,
+    # not just the sub-path one below.
+    {"from_route": "/tsi-crm", "to_route": "tsi_crm"},
     {"from_route": "/tsi-crm/<path:app_path>", "to_route": "tsi_crm"},
 ]
 
