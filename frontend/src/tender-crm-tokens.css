@@ -1,0 +1,87 @@
+/* Design tokens for the Tender CRM design (exported from Claude Design as
+   "Tender CRM.html", apps/tender_crm/tender_crm/Import_crm_data/). Values are
+   copied verbatim from that export's :root block. Imported once, from
+   index.css, ahead of frappe-ui's own styles so these variables are
+   available everywhere in the fork. */
+
+:root {
+  --tsi-color-bg: #f3f2f2;
+  --tsi-color-surface: #eae9e9;
+  --tsi-color-text: #201e1d;
+  --tsi-color-accent: #0088b0;
+  --tsi-color-accent-2: #d6006c;
+  --tsi-color-divider: color-mix(in srgb, #201e1d 16%, transparent);
+
+  --tsi-color-neutral-100: #f8f4f4;
+  --tsi-color-neutral-200: #eae7e7;
+  --tsi-color-neutral-300: #d7d3d3;
+  --tsi-color-neutral-400: #bab6b6;
+  --tsi-color-neutral-500: #9b9797;
+  --tsi-color-neutral-600: #7d7979;
+  --tsi-color-neutral-700: #605d5d;
+  --tsi-color-neutral-800: #444141;
+  --tsi-color-neutral-900: #2d2b2b;
+
+  --tsi-color-accent-100: #e9f8ff;
+  --tsi-color-accent-200: #cbeeff;
+  --tsi-color-accent-300: #99e0ff;
+  --tsi-color-accent-400: #62c5ee;
+  --tsi-color-accent-500: #38a6cf;
+  --tsi-color-accent-600: #1186ac;
+  --tsi-color-accent-700: #006786;
+  --tsi-color-accent-800: #004961;
+  --tsi-color-accent-900: #0a303e;
+
+  --tsi-color-accent-2-100: #fff1f4;
+  --tsi-color-accent-2-200: #ffdee6;
+  --tsi-color-accent-2-300: #ffc0d0;
+  --tsi-color-accent-2-400: #ff90b1;
+  --tsi-color-accent-2-500: #ff458e;
+  --tsi-color-accent-2-600: #d82071;
+  --tsi-color-accent-2-700: #aa0b56;
+  --tsi-color-accent-2-800: #790e3d;
+  --tsi-color-accent-2-900: #4b1528;
+
+  --tsi-color-process-yellow: #edbb00;
+
+  --tsi-font-heading: 'Source Serif 4', system-ui, sans-serif;
+  --tsi-font-heading-weight: 600;
+  --tsi-font-body: 'Source Serif 4', system-ui, sans-serif;
+
+  --tsi-space-1: 5px;
+  --tsi-space-2: 10px;
+  --tsi-space-3: 15px;
+  --tsi-space-4: 20px;
+  --tsi-space-6: 30px;
+  --tsi-space-8: 40px;
+
+  --tsi-radius-sm: 1px;
+  --tsi-radius-md: 2px;
+  --tsi-radius-lg: 4px;
+
+  --tsi-shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
+  --tsi-shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
+  --tsi-shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+}
+
+/* The repeating "masthead" motif: every top-level screen's <h1> carries a
+   heavy double-rule underline directly beneath it. Apply with
+   class="tsi-masthead" on the heading. */
+.tsi-masthead {
+  font-family: var(--tsi-font-heading);
+  font-weight: var(--tsi-font-heading-weight);
+  font-size: 38px;
+  color: var(--tsi-color-text);
+  padding-bottom: var(--tsi-space-2);
+  border-bottom: 3px solid var(--tsi-color-text);
+  position: relative;
+  margin-bottom: var(--tsi-space-4);
+}
+.tsi-masthead::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  border-bottom: 1px solid var(--tsi-color-text);
+}

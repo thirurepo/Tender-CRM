@@ -25,19 +25,29 @@ app_license = "mit"
 # run this app for the pipeline and territory customization alone.
 required_apps = ["frappe/crm"]
 
+# Serves the Tender CRM design's forked frontend (../frontend/) at /tsi-crm.
+# Purely additive: crm's own /crm route (apps/crm/crm/hooks.py) is untouched
+# and keeps working exactly as before.
+website_route_rules = [
+    {"from_route": "/tsi-crm/<path:app_path>", "to_route": "tsi_crm"},
+]
+
 
 # Fixtures
 # --------
-# The fields that tie a CRM Deal to the ERPNext documents raised from it.
+# The ERPNext-linkage fields, plus the fields the Tender CRM design's
+# Leads/Clients screens (tender_crm/frontend/) read and write on CRM Lead,
+# CRM Organization, and core Comment.
 #
 # `Sales Order-crm_deal` closes a real gap upstream: crm stamps `crm_deal` onto a
 # Quotation but never onto the Sales Order made from it, so today the only way to
 # get from an order back to the deal is to walk every item's `prevdoc_docname` to
 # its quotation and read the field off that. See crm_overrides/erpnext_link.py.
 #
-# These fields are also created by tender_crm.patches.add_erpnext_link_fields,
-# which is what guarantees they exist on an already-migrated site; the fixtures
-# are what carry them to a new one.
+# These fields are also created by tender_crm.patches.add_erpnext_link_fields /
+# tender_crm.patches.add_client_lead_fields (see tender_crm/setup.py), which is
+# what guarantees they exist on an already-migrated site; the fixtures are what
+# carry them to a new one.
 #
 # The CRM Lead-tsi_* fields and the two "disabled" flags carry the legacy CRM
 # lead import's schema (see lead_import_schema.py); the CRM Organization-tsi_*
@@ -71,6 +81,10 @@ fixtures = [
             "CRM Lead-tsi_weak_lead",
             "CRM Lead-tsi_difficult_personality",
             "CRM Lead-tsi_time_waster",
+            "CRM Lead-tsi_client_nature",
+            "CRM Lead-tsi_notice_no",
+            "CRM Lead-tsi_bid_due",
+            "CRM Lead-tsi_sales_unit",
             "CRM Lead Status-disabled",
             "CRM Lead Source-disabled",
             "CRM Organization-tsi_contact_first_name",
@@ -102,6 +116,13 @@ fixtures = [
             "CRM Organization-tsi_exact_accounting_name",
             "CRM Organization-tsi_invoice_projects_separately",
             "CRM Organization-tsi_accept_credit_card",
+            "CRM Organization-tsi_client_nature",
+            "CRM Organization-tsi_ranking",
+            "CRM Organization-tsi_sales_unit",
+            "CRM Organization-tsi_referred_by",
+            "CRM Organization-tsi_client_since",
+            "CRM Organization-tsi_developers",
+            "Comment-tsi_note_type",
         ]]]
     },
     {

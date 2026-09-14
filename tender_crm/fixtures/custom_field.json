@@ -68,7 +68,7 @@
   "fieldtype": "Link",
   "options": "TSI Country State",
   "insert_after": "tsi_country",
-  "description": "Filtered to the selected Country by a CRM Form Script — see tender_crm/lead_import_schema.py.",
+  "description": "Filtered to the selected Country by a CRM Form Script \u2014 see tender_crm/lead_import_schema.py.",
   "module": "Tender CRM"
  },
  {
@@ -82,7 +82,7 @@
   "read_only": 1,
   "no_copy": 1,
   "insert_after": "naming_series",
-  "description": "Deterministic key computed from the legacy CSV row (name, email, added date). Lets the import script re-run without creating duplicate leads — see tender_crm/Import_crm_data/import_leads.py.",
+  "description": "Deterministic key computed from the legacy CSV row (name, email, added date). Lets the import script re-run without creating duplicate leads \u2014 see tender_crm/Import_crm_data/import_leads.py.",
   "module": "Tender CRM"
  },
  {
@@ -105,7 +105,7 @@
   "fieldtype": "Date",
   "read_only": 1,
   "insert_after": "converted",
-  "description": "Stamped automatically when Converted is checked — see crm_overrides/lead_import.py. Set directly from the legacy CSV for imported leads, and never overwritten by the automatic stamp for those (doc.flags.tsi_importing).",
+  "description": "Stamped automatically when Converted is checked \u2014 see crm_overrides/lead_import.py. Set directly from the legacy CSV for imported leads, and never overwritten by the automatic stamp for those (doc.flags.tsi_importing).",
   "module": "Tender CRM"
  },
  {
@@ -117,7 +117,7 @@
   "fieldtype": "Date",
   "read_only": 1,
   "insert_after": "tsi_converted_date",
-  "description": "Stamped automatically whenever Status changes — see crm_overrides/lead_import.py. Set directly from the legacy CSV for imported leads, and never overwritten by the automatic stamp for those (doc.flags.tsi_importing).",
+  "description": "Stamped automatically whenever Status changes \u2014 see crm_overrides/lead_import.py. Set directly from the legacy CSV for imported leads, and never overwritten by the automatic stamp for those (doc.flags.tsi_importing).",
   "module": "Tender CRM"
  },
  {
@@ -287,7 +287,7 @@
   "fieldtype": "Link",
   "options": "TSI Country State",
   "insert_after": "tsi_country",
-  "description": "Filtered to the selected Country by a CRM Form Script — see tender_crm/client_import_schema.py. Same TSI Country State master CRM Lead uses.",
+  "description": "Filtered to the selected Country by a CRM Form Script \u2014 see tender_crm/client_import_schema.py. Same TSI Country State master CRM Lead uses.",
   "module": "Tender CRM"
  },
  {
@@ -333,7 +333,7 @@
   "fieldtype": "Link",
   "options": "CRM Lead",
   "insert_after": "tsi_added_date",
-  "description": "Set only when the legacy CRM's Lead Name resolved to exactly one imported CRM Lead — see tsi_legacy_lead_name/tsi_legacy_lead_company for the raw values when it did not.",
+  "description": "Set only when the legacy CRM's Lead Name resolved to exactly one imported CRM Lead \u2014 see tsi_legacy_lead_name/tsi_legacy_lead_company for the raw values when it did not.",
   "module": "Tender CRM"
  },
  {
@@ -456,7 +456,7 @@
   "label": "Cost Code",
   "fieldtype": "Data",
   "insert_after": "tsi_low_value_client",
-  "description": "Legacy accounting reference. Plain text — not linked to any ERPNext master, since none is confirmed to match yet.",
+  "description": "Legacy accounting reference. Plain text \u2014 not linked to any ERPNext master, since none is confirmed to match yet.",
   "module": "Tender CRM"
  },
  {
@@ -467,7 +467,7 @@
   "label": "Tax Code Name",
   "fieldtype": "Data",
   "insert_after": "tsi_cost_code",
-  "description": "Legacy accounting reference. Plain text — not linked to any ERPNext master, since none is confirmed to match yet.",
+  "description": "Legacy accounting reference. Plain text \u2014 not linked to any ERPNext master, since none is confirmed to match yet.",
   "module": "Tender CRM"
  },
  {
@@ -478,7 +478,7 @@
   "label": "Sales Term Name",
   "fieldtype": "Data",
   "insert_after": "tsi_tax_code_name",
-  "description": "Legacy accounting reference. Plain text — not linked to any ERPNext master, since none is confirmed to match yet.",
+  "description": "Legacy accounting reference. Plain text \u2014 not linked to any ERPNext master, since none is confirmed to match yet.",
   "module": "Tender CRM"
  },
  {
@@ -489,7 +489,7 @@
   "label": "Exact Accounting Name",
   "fieldtype": "Data",
   "insert_after": "tsi_sales_term_name",
-  "description": "Legacy accounting reference. Plain text — not linked to any ERPNext master, since none is confirmed to match yet.",
+  "description": "Legacy accounting reference. Plain text \u2014 not linked to any ERPNext master, since none is confirmed to match yet.",
   "module": "Tender CRM"
  },
  {
@@ -510,6 +510,124 @@
   "label": "Accept Credit Card",
   "fieldtype": "Check",
   "insert_after": "tsi_invoice_projects_separately",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Lead-tsi_client_nature",
+  "dt": "CRM Lead",
+  "fieldname": "tsi_client_nature",
+  "label": "Nature",
+  "fieldtype": "Select",
+  "options": "Retainer\nProject\nOne-off\nReferral",
+  "insert_after": "territory",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Lead-tsi_notice_no",
+  "dt": "CRM Lead",
+  "fieldname": "tsi_notice_no",
+  "label": "Notice No.",
+  "fieldtype": "Data",
+  "insert_after": "tsi_client_nature",
+  "description": "Tender notice this lead came from, where the source is a procurement portal.",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Lead-tsi_bid_due",
+  "dt": "CRM Lead",
+  "fieldname": "tsi_bid_due",
+  "label": "Bid Due",
+  "fieldtype": "Date",
+  "insert_after": "tsi_notice_no",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Lead-tsi_sales_unit",
+  "dt": "CRM Lead",
+  "fieldname": "tsi_sales_unit",
+  "label": "Sales Unit",
+  "fieldtype": "Link",
+  "options": "TSI Sales Unit",
+  "insert_after": "lead_owner",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_client_nature",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_client_nature",
+  "label": "Nature",
+  "fieldtype": "Select",
+  "options": "Retainer\nProject\nOne-off\nReferral",
+  "insert_after": "organization_name",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_ranking",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_ranking",
+  "label": "Ranking",
+  "fieldtype": "Select",
+  "options": "A\nB\nC\nD",
+  "insert_after": "tsi_client_nature",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_sales_unit",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_sales_unit",
+  "label": "Sales Unit",
+  "fieldtype": "Link",
+  "options": "TSI Sales Unit",
+  "insert_after": "territory",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_referred_by",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_referred_by",
+  "label": "Referred By",
+  "fieldtype": "Data",
+  "insert_after": "tsi_ranking",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_client_since",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_client_since",
+  "label": "Client Since",
+  "fieldtype": "Date",
+  "insert_after": "tsi_referred_by",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_developers",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_developers",
+  "label": "Developers",
+  "fieldtype": "Table",
+  "options": "TSI Client Developer",
+  "insert_after": "tsi_client_since",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Comment-tsi_note_type",
+  "dt": "Comment",
+  "fieldname": "tsi_note_type",
+  "label": "Note Type",
+  "fieldtype": "Select",
+  "options": "\nPrivate note\nDev team note\nPermanent note\nAudio note",
+  "insert_after": "content",
   "module": "Tender CRM"
  }
 ]

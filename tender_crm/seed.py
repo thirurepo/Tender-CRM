@@ -28,6 +28,7 @@ from tender_crm.pipeline import (
     TERRITORIES,
     TERRITORY_ROOT,
 )
+from tender_crm.sales_units import SALES_UNITS
 
 # Set once the one-shot reordering has been applied to this site. Stored as global
 # defaults rather than fields on Tender CRM Settings so that resetting the settings
@@ -39,6 +40,14 @@ from tender_crm.pipeline import (
 # two independent one-shot migrations that merely happen to run on the same migrate.
 DEAL_ORDERING_APPLIED_FLAG = "tender_crm_deal_pipeline_ordering_applied"
 LEAD_ORDERING_APPLIED_FLAG = "tender_crm_lead_pipeline_ordering_applied"
+
+# A distinct one-shot from LEAD_ORDERING_APPLIED_FLAG on purpose: that flag is
+# already set on this site (the pipeline was seeded before the TSI design's
+# Kanban palette existed), so a change to LEAD_STATUSES' colors would silently
+# never reach the database if it rode on the same flag. Recoloring is its own
+# independent migration and gets its own flag, per the one-flag-per-concern
+# rule this app already learned the hard way once.
+LEAD_RECOLOR_APPLIED_FLAG = "tender_crm_lead_status_recolor_applied"
 
 
 def seed_deal_statuses():
@@ -102,6 +111,25 @@ def seed_lead_statuses():
         frappe.db.set_global(LEAD_ORDERING_APPLIED_FLAG, "1")
 
 
+def recolor_lead_statuses():
+    """Apply the TSI design system's Kanban palette to lead statuses, once.
+
+    Only touches `color` — position was already settled by
+    LEAD_ORDERING_APPLIED_FLAG and re-applying it here would risk undoing a
+    manual re-order the same way sharing one flag would. A status this app
+    does not seed (Converted/Unqualified/Junk are unaffected by this design
+    pass) or one that does not exist yet is left alone.
+    """
+    if frappe.db.get_global(LEAD_RECOLOR_APPLIED_FLAG):
+        return
+
+    for status, _type, color in LEAD_STATUSES:
+        if frappe.db.exists("CRM Lead Status", status):
+            frappe.db.set_value("CRM Lead Status", status, "color", color)
+
+    frappe.db.set_global(LEAD_RECOLOR_APPLIED_FLAG, "1")
+
+
 def seed_lost_reasons():
     """Add TSI's lost reasons alongside the ones crm ships.
 
@@ -145,9 +173,27 @@ def seed_territories():
         ).insert(ignore_permissions=True)
 
 
+def seed_sales_units():
+    """Create TSI's sales units.
+
+    Creation-only, like seed_lost_reasons() and the territory leaves: a sales
+    unit someone deletes on purpose does not come back reordered or
+    recoloured, because there is no position or colour on this doctype to fight
+    over — so no flag is needed here.
+    """
+    for unit in SALES_UNITS:
+        if frappe.db.exists("TSI Sales Unit", unit):
+            continue
+        frappe.get_doc({"doctype": "TSI Sales Unit", "unit_name": unit}).insert(
+            ignore_permissions=True
+        )
+
+
 def seed_all():
     """Everything, in dependency order. Used by after_install."""
     seed_deal_statuses()
     seed_lead_statuses()
+    recolor_lead_statuses()
     seed_lost_reasons()
     seed_territories()
+    seed_sales_units()

@@ -6,3 +6,6 @@ tags
 node_modules
 __pycache__
 tender_crm/public/dist
+tender_crm/public/frontend
+tender_crm/www/tsi_crm.html
+dev-dist
