@@ -19,6 +19,8 @@
 import frappe
 
 from tender_crm.client_import_schema import CLIENT_FORM_SCRIPTS, CRM_ORGANIZATION_FIELDS
+from tender_crm.comment_import_schema import COMMENT_IMPORT_FIELDS
+from tender_crm.contact_import_schema import CRM_CONTACT_FIELDS
 from tender_crm.lead_import_schema import (
     CRM_LEAD_FIELDS,
     DISABLED_FLAG_FIELDS,
@@ -287,6 +289,46 @@ def ensure_client_import_fields():
             continue
         frappe.get_doc(
             {"doctype": "Custom Field", "dt": "CRM Organization", "module": MODULE, **spec}
+        ).insert(ignore_permissions=True)
+
+
+def ensure_contact_import_fields():
+    """Create Contact's legacy client-contact-import fields (see
+    contact_import_schema.py).
+
+    Guarded per field, matching ensure_lead_import_fields, for the same
+    reason. Contact is a core Frappe doctype (not crm's), but it always
+    exists on any bench this app runs on, so the DocType guard is really just
+    consistency with the other ensure_*_import_fields functions.
+    """
+    if not frappe.db.exists("DocType", "Contact"):
+        return
+
+    for spec in CRM_CONTACT_FIELDS:
+        if frappe.db.exists("Custom Field", f"Contact-{spec['fieldname']}"):
+            continue
+        frappe.get_doc(
+            {"doctype": "Custom Field", "dt": "Contact", "module": MODULE, **spec}
+        ).insert(ignore_permissions=True)
+
+
+def ensure_comment_import_fields():
+    """Create Comment's legacy comment/reply-import fields (see
+    comment_import_schema.py).
+
+    Guarded per field, matching ensure_lead_import_fields. Must run after
+    ensure_client_lead_fields() (which creates Comment-tsi_note_type,
+    tsi_legacy_comment_id's insert_after anchor) — both are called from
+    install.py/patches.txt in that order.
+    """
+    if not frappe.db.exists("DocType", "Comment"):
+        return
+
+    for spec in COMMENT_IMPORT_FIELDS:
+        if frappe.db.exists("Custom Field", f"Comment-{spec['fieldname']}"):
+            continue
+        frappe.get_doc(
+            {"doctype": "Custom Field", "dt": "Comment", "module": MODULE, **spec}
         ).insert(ignore_permissions=True)
 
 
