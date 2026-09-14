@@ -13,7 +13,9 @@ import frappe
 from tender_crm.seed import seed_all
 from tender_crm.setup import (
     configure_erpnext_integration,
+    ensure_client_lead_fields,
     ensure_link_fields,
+    ensure_side_panel_layouts,
     seed_settings,
 )
 
@@ -24,9 +26,14 @@ def after_install():
     Ordered the same way patches.txt is, and for the same reasons: the pipeline has
     to exist before a setting can point at one of its statuses, and the link fields
     have to exist before the integration is switched on and starts writing to them.
+    seed_all() creates TSI Sales Unit rows before ensure_client_lead_fields() adds
+    the Link fields that point at them, though field creation does not actually
+    depend on any row existing — it is just the more sensible read order.
     """
     seed_all()
     ensure_link_fields()
+    ensure_client_lead_fields()
+    ensure_side_panel_layouts()
     configure_erpnext_integration()
     seed_settings()
     frappe.db.commit()

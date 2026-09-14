@@ -39,13 +39,18 @@ DEAL_STATUSES = [
 # "Tender Notice" is a lead that came off a procurement portal rather than from a
 # person — nobody has been contacted yet, so it is not "Contacted", but it is also
 # not an inbound "New" enquiry that someone is waiting on a reply to.
+#
+# Colors for the six statuses on the working board (New through Qualified) are
+# pinned to the Tender CRM design system's Kanban column palette — see
+# seed.py's LEAD_RECOLOR_APPLIED_FLAG for why changing these here does not, by
+# itself, recolor an already-seeded site.
 LEAD_STATUSES = [
     ("New", "Open", "gray"),
     ("Tender Notice", "Open", "cyan"),
-    ("Contacted", "Ongoing", "orange"),
-    ("Demo Scheduled", "Ongoing", "violet"),
-    ("Nurture", "Ongoing", "blue"),
-    ("Qualified", "Won", "green"),
+    ("Contacted", "Ongoing", "pink"),
+    ("Demo Scheduled", "Ongoing", "amber"),
+    ("Nurture", "Ongoing", "teal"),
+    ("Qualified", "Won", "black"),
     ("Converted", "Won", "teal"),
     ("Unqualified", "Lost", "red"),
     ("Junk", "Lost", "purple"),

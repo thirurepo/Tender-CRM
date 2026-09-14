@@ -1,0 +1,11 @@
+{
+	"private": true,
+	"type": "module",
+	"name": "tender_crm",
+	"description": "TSI's customization layer over the Frappe CRM (crm) app",
+	"scripts": {
+		"postinstall": "cd frontend && yarn install --check-files",
+		"dev": "cd frontend && yarn dev",
+		"build": "cd frontend && yarn build"
+	}
+}

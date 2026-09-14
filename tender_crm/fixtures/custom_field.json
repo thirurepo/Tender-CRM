@@ -36,5 +36,123 @@
   "insert_after": "customer_name",
   "description": "Set by Tender CRM when this order is submitted.",
   "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Lead-tsi_client_nature",
+  "dt": "CRM Lead",
+  "fieldname": "tsi_client_nature",
+  "label": "Nature",
+  "fieldtype": "Select",
+  "options": "Retainer\nProject\nOne-off\nReferral",
+  "insert_after": "territory",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Lead-tsi_notice_no",
+  "dt": "CRM Lead",
+  "fieldname": "tsi_notice_no",
+  "label": "Notice No.",
+  "fieldtype": "Data",
+  "insert_after": "tsi_client_nature",
+  "description": "Tender notice this lead came from, where the source is a procurement portal.",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Lead-tsi_bid_due",
+  "dt": "CRM Lead",
+  "fieldname": "tsi_bid_due",
+  "label": "Bid Due",
+  "fieldtype": "Date",
+  "insert_after": "tsi_notice_no",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Lead-tsi_sales_unit",
+  "dt": "CRM Lead",
+  "fieldname": "tsi_sales_unit",
+  "label": "Sales Unit",
+  "fieldtype": "Link",
+  "options": "TSI Sales Unit",
+  "insert_after": "lead_owner",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_client_nature",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_client_nature",
+  "label": "Nature",
+  "fieldtype": "Select",
+  "options": "Retainer\nProject\nOne-off\nReferral",
+  "insert_after": "organization_name",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_ranking",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_ranking",
+  "label": "Ranking",
+  "fieldtype": "Select",
+  "options": "A\nB\nC\nD",
+  "insert_after": "tsi_client_nature",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_sales_unit",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_sales_unit",
+  "label": "Sales Unit",
+  "fieldtype": "Link",
+  "options": "TSI Sales Unit",
+  "insert_after": "territory",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_referred_by",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_referred_by",
+  "label": "Referred By",
+  "fieldtype": "Data",
+  "insert_after": "tsi_ranking",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_client_since",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_client_since",
+  "label": "Client Since",
+  "fieldtype": "Date",
+  "insert_after": "tsi_referred_by",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_developers",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_developers",
+  "label": "Developers",
+  "fieldtype": "Table",
+  "options": "TSI Client Developer",
+  "insert_after": "tsi_client_since",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Comment-tsi_note_type",
+  "dt": "Comment",
+  "fieldname": "tsi_note_type",
+  "label": "Note Type",
+  "fieldtype": "Select",
+  "options": "\nPrivate note\nDev team note\nPermanent note\nAudio note",
+  "insert_after": "content",
+  "module": "Tender CRM"
  }
 ]

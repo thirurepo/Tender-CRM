@@ -86,6 +86,223 @@ def ensure_link_fields():
         )
 
 
+# CRM Organization's client-status field is *not* defined here. The Tender
+# CRM design's own annotation describes it as "a legacy Client... carrying a
+# tsi_client_status Select with the fourteen TSI values" — the same real
+# concept the legacy-CRM import (client_import_schema.py) independently
+# implements as tsi_client_status, a Link to Tender Client Status seeded from
+# the actual historical data in CRM_Client_Import.csv. That is the
+# authoritative source; a second, mockup-derived Select under the same
+# fieldname would collide with it. See tender_crm.setup.ensure_client_import_fields.
+
+# Shared between CRM Lead and CRM Organization's "Nature" fields. Only one
+# sample value appears anywhere in the design ("Government" for a lead,
+# "Retainer" for a client) — this list is a starting point, not a confirmed
+# business list; adjust before relying on it.
+CLIENT_NATURES = ["Retainer", "Project", "One-off", "Referral"]
+
+NOTE_TYPES = ["Private note", "Dev team note", "Permanent note", "Audio note"]
+
+# New Custom Fields the Tender CRM design's Leads/Clients screens need on top
+# of crm's stock CRM Lead / CRM Organization fields. Mirrors LINK_FIELDS'
+# shape and the same "created once, never dt-checked away" idempotency.
+CLIENT_LEAD_FIELDS = [
+    {
+        "dt": "CRM Lead",
+        "fieldname": "tsi_client_nature",
+        "label": "Nature",
+        "fieldtype": "Select",
+        "options": "\n".join(CLIENT_NATURES),
+        "insert_after": "territory",
+    },
+    {
+        # Design sidebar label is literally "Notice no.", not "Tender notice
+        # no." — kept verbatim so the UI can use the field's own label.
+        "dt": "CRM Lead",
+        "fieldname": "tsi_notice_no",
+        "label": "Notice No.",
+        "fieldtype": "Data",
+        "insert_after": "tsi_client_nature",
+        "description": "Tender notice this lead came from, where the source is a procurement portal.",
+    },
+    {
+        "dt": "CRM Lead",
+        "fieldname": "tsi_bid_due",
+        "label": "Bid Due",
+        "fieldtype": "Date",
+        "insert_after": "tsi_notice_no",
+    },
+    {
+        "dt": "CRM Lead",
+        "fieldname": "tsi_sales_unit",
+        "label": "Sales Unit",
+        "fieldtype": "Link",
+        "options": "TSI Sales Unit",
+        "insert_after": "lead_owner",
+    },
+    {
+        "dt": "CRM Organization",
+        "fieldname": "tsi_client_nature",
+        "label": "Nature",
+        "fieldtype": "Select",
+        "options": "\n".join(CLIENT_NATURES),
+        "insert_after": "organization_name",
+    },
+    {
+        "dt": "CRM Organization",
+        "fieldname": "tsi_ranking",
+        "label": "Ranking",
+        "fieldtype": "Select",
+        "options": "A\nB\nC\nD",
+        "insert_after": "tsi_client_nature",
+    },
+    {
+        "dt": "CRM Organization",
+        "fieldname": "tsi_sales_unit",
+        "label": "Sales Unit",
+        "fieldtype": "Link",
+        "options": "TSI Sales Unit",
+        "insert_after": "territory",
+    },
+    {
+        # tsi_cost_code is deliberately NOT declared here: the legacy-CRM
+        # import (client_import_schema.py) already defines an identical
+        # field under the same name (Data, "Cost Code") — declaring it twice
+        # would just be a second, redundant Custom Field spec for the same
+        # fieldname. See ensure_client_import_fields.
+        "dt": "CRM Organization",
+        "fieldname": "tsi_referred_by",
+        "label": "Referred By",
+        "fieldtype": "Data",
+        "insert_after": "tsi_ranking",
+    },
+    {
+        "dt": "CRM Organization",
+        "fieldname": "tsi_client_since",
+        "label": "Client Since",
+        "fieldtype": "Date",
+        "insert_after": "tsi_referred_by",
+    },
+    {
+        "dt": "CRM Organization",
+        "fieldname": "tsi_developers",
+        "label": "Developers",
+        "fieldtype": "Table",
+        "options": "TSI Client Developer",
+        "insert_after": "tsi_client_since",
+    },
+    {
+        # Backs the Comments tab's note-type chips (Private/Dev team/Permanent/
+        # Audio note) on both the Lead and Client detail screens. Deliberately a
+        # field on core `Comment` rather than a new doctype: it keeps every
+        # existing comment-timeline feature (edit, delete, reference lookup)
+        # working unchanged, and a blank value reads as an ordinary comment
+        # everywhere else in the desk/crm UI that Comment is used.
+        "dt": "Comment",
+        "fieldname": "tsi_note_type",
+        "label": "Note Type",
+        "fieldtype": "Select",
+        "options": "\n" + "\n".join(NOTE_TYPES),
+        "insert_after": "content",
+    },
+]
+
+
+def ensure_client_lead_fields():
+    """Create the Custom Fields the Leads/Clients screens read and write.
+
+    Same per-field guard as ensure_link_fields(): a doctype missing (crm
+    uninstalled, or — for Comment — a Frappe version without it, which does
+    not happen in practice but costs nothing to check) skips just that field
+    rather than the whole step.
+    """
+    for spec in CLIENT_LEAD_FIELDS:
+        doctype = spec["dt"]
+
+        if not frappe.db.exists("DocType", doctype):
+            continue
+
+        if frappe.db.exists("Custom Field", f"{doctype}-{spec['fieldname']}"):
+            continue
+
+        frappe.get_doc({"doctype": "Custom Field", "module": MODULE, **spec}).insert(
+            ignore_permissions=True
+        )
+
+
+SIDE_PANEL_LAYOUTS = [
+    {
+        "dt": "CRM Lead",
+        "type": "Side Panel",
+        # Mirrors the Tender CRM design's Lead detail "Details" section, in the
+        # exact field order the design specifies.
+        "fields": [
+            "source",
+            "tsi_client_nature",
+            "territory",
+            "lead_owner",
+            "tsi_notice_no",
+            "tsi_bid_due",
+        ],
+    },
+    {
+        "dt": "CRM Organization",
+        "type": "Side Panel",
+        # Mirrors the design's Client detail "Client fields" section.
+        "fields": [
+            "tsi_client_nature",
+            "tsi_sales_unit",
+            "tsi_cost_code",
+            "tsi_referred_by",
+            "tsi_client_since",
+        ],
+    },
+]
+
+
+def ensure_side_panel_layouts():
+    """Give CRM Lead / CRM Organization a default Side Panel layout.
+
+    Unlike Quick Entry or Data Fields, crm's `get_sidepanel_sections` has no
+    generated fallback — a doctype with no "Side Panel" CRM Fields Layout
+    record shows an empty sidebar, full stop. crm ships no default for either
+    doctype, so without this the design's "Details"/"Client fields" sidebar
+    sections would simply never appear.
+
+    Create-only, like the lost reasons and territory leaves: this is exactly
+    the layout a Sales Manager can already hand-edit from Settings, so once a
+    record exists here (whether seeded by this function or hand-built by a
+    user) it is never touched again — no flag, just an existence check.
+    """
+    import json
+
+    for spec in SIDE_PANEL_LAYOUTS:
+        doctype = spec["dt"]
+
+        if not frappe.db.exists("DocType", doctype):
+            continue
+
+        if frappe.db.exists("CRM Fields Layout", {"dt": doctype, "type": "Side Panel"}):
+            continue
+
+        layout = [
+            {
+                "label": "Details",
+                "name": "tsi_details_section",
+                "opened": True,
+                "columns": [{"name": "tsi_details_column", "fields": spec["fields"]}],
+            }
+        ]
+        frappe.get_doc(
+            {
+                "doctype": "CRM Fields Layout",
+                "dt": doctype,
+                "type": "Side Panel",
+                "layout": json.dumps(layout),
+            }
+        ).insert(ignore_permissions=True)
+
+
 def seed_settings():
     """Write Tender CRM Settings' defaults the first time it exists.
 
