@@ -18,6 +18,13 @@
 
 import frappe
 
+from tender_crm.client_import_schema import CLIENT_FORM_SCRIPTS, CRM_ORGANIZATION_FIELDS
+from tender_crm.lead_import_schema import (
+    CRM_LEAD_FIELDS,
+    DISABLED_FLAG_FIELDS,
+    FORM_SCRIPTS as LEAD_FORM_SCRIPTS,
+)
+
 # `module` is set on every custom field on purpose. A Custom Field inserted without
 # one is owned by no app, so it would never be picked up by a fixture export and
 # would drift away from fixtures/custom_field.json over time.
@@ -82,6 +89,86 @@ def ensure_link_fields():
             continue
 
         frappe.get_doc({"doctype": "Custom Field", "module": MODULE, **spec}).insert(
+            ignore_permissions=True
+        )
+
+
+def ensure_lead_import_fields():
+    """Create CRM Lead's legacy-import fields (see lead_import_schema.py).
+
+    Guarded per field, matching ensure_link_fields — a run interrupted partway
+    through, or a field an administrator already added by hand, must not stop
+    the rest of the fields from being created.
+    """
+    if not frappe.db.exists("DocType", "CRM Lead"):
+        return
+
+    for spec in CRM_LEAD_FIELDS:
+        if frappe.db.exists("Custom Field", f"CRM Lead-{spec['fieldname']}"):
+            continue
+        frappe.get_doc(
+            {"doctype": "Custom Field", "dt": "CRM Lead", "module": MODULE, **spec}
+        ).insert(ignore_permissions=True)
+
+
+def ensure_disabled_flag_fields():
+    """Add a `disabled` flag to CRM Lead Status and CRM Lead Source.
+
+    Neither carries one upstream. It exists so the legacy CRM import can retire
+    crm's stock statuses/sources — and TSI's own pipeline statuses, seeded by
+    seed.py — in favour of the legacy set, without deleting a value any
+    existing lead might still reference. The flag alone hides nothing in the
+    CRM frontend: ensure_form_scripts() below is what makes it filter pickers.
+    """
+    for spec in DISABLED_FLAG_FIELDS:
+        doctype = spec["dt"]
+        if not frappe.db.exists("DocType", doctype):
+            continue
+        if frappe.db.exists("Custom Field", f"{doctype}-{spec['fieldname']}"):
+            continue
+        frappe.get_doc({"doctype": "Custom Field", "module": MODULE, **spec}).insert(
+            ignore_permissions=True
+        )
+
+
+def ensure_client_import_fields():
+    """Create CRM Organization's legacy-import fields (see client_import_schema.py).
+
+    Guarded per field, matching ensure_lead_import_fields, for the same reason.
+    """
+    if not frappe.db.exists("DocType", "CRM Organization"):
+        return
+
+    for spec in CRM_ORGANIZATION_FIELDS:
+        if frappe.db.exists("Custom Field", f"CRM Organization-{spec['fieldname']}"):
+            continue
+        frappe.get_doc(
+            {"doctype": "Custom Field", "dt": "CRM Organization", "module": MODULE, **spec}
+        ).insert(ignore_permissions=True)
+
+
+def ensure_form_scripts():
+    """Install the CRM Lead form script that filters tsi_state / status / source."""
+    _install_form_scripts(LEAD_FORM_SCRIPTS)
+
+
+def ensure_client_form_scripts():
+    """Install the CRM Organization form script that filters tsi_state by tsi_country."""
+    _install_form_scripts(CLIENT_FORM_SCRIPTS)
+
+
+def _install_form_scripts(specs):
+    """Shared installer behind ensure_form_scripts / ensure_client_form_scripts.
+
+    Creates each script once and then leaves it alone, the same one-shot-then-
+    hands-off stance seed_settings takes on user-editable configuration — a
+    re-run must not silently overwrite a script an administrator has since
+    tuned by hand in desk.
+    """
+    for spec in specs:
+        if frappe.db.exists("CRM Form Script", spec["name"]):
+            continue
+        frappe.get_doc({"doctype": "CRM Form Script", **spec}).insert(
             ignore_permissions=True
         )
 

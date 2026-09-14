@@ -39,6 +39,16 @@ required_apps = ["frappe/crm"]
 # which is what guarantees they exist on an already-migrated site; the fixtures
 # are what carry them to a new one.
 #
+# The CRM Lead-tsi_* fields and the two "disabled" flags carry the legacy CRM
+# lead import's schema (see lead_import_schema.py); the CRM Organization-tsi_*
+# fields carry the legacy client import's (see client_import_schema.py). The
+# two CRM Form Scripts carry the frontend filtering both imports need (state
+# scoped to country; for leads, status/source scoped to not-disabled). Same
+# two-path split as the ERPNext link fields: also created by
+# tender_crm.setup.ensure_lead_import_fields / ensure_client_import_fields /
+# ensure_disabled_flag_fields / ensure_form_scripts / ensure_client_form_scripts
+# for an already-migrated site.
+#
 # Edit fixtures/custom_field.json by hand. Do not run `bench export-fixtures` on
 # this bench — it is known to wipe the sibling app's fixture JSON.
 fixtures = [
@@ -48,6 +58,57 @@ fixtures = [
             "CRM Deal-tsi_erpnext_company",
             "CRM Deal-tsi_erpnext_sales_order",
             "Sales Order-crm_deal",
+            "CRM Lead-tsi_skype",
+            "CRM Lead-tsi_country",
+            "CRM Lead-tsi_state",
+            "CRM Lead-tsi_legacy_id",
+            "CRM Lead-tsi_added_date",
+            "CRM Lead-tsi_converted_date",
+            "CRM Lead-tsi_last_status_change",
+            "CRM Lead-tsi_contacted_today",
+            "CRM Lead-tsi_linkedin_sent",
+            "CRM Lead-tsi_chronic_nonresponder",
+            "CRM Lead-tsi_weak_lead",
+            "CRM Lead-tsi_difficult_personality",
+            "CRM Lead-tsi_time_waster",
+            "CRM Lead Status-disabled",
+            "CRM Lead Source-disabled",
+            "CRM Organization-tsi_contact_first_name",
+            "CRM Organization-tsi_contact_last_name",
+            "CRM Organization-tsi_contact_email",
+            "CRM Organization-tsi_contact_mobile",
+            "CRM Organization-tsi_contact_phone",
+            "CRM Organization-tsi_contact_skype",
+            "CRM Organization-tsi_country",
+            "CRM Organization-tsi_state",
+            "CRM Organization-tsi_client_status",
+            "CRM Organization-tsi_account_owner",
+            "CRM Organization-tsi_added_date",
+            "CRM Organization-tsi_converted_from_lead",
+            "CRM Organization-tsi_legacy_lead_name",
+            "CRM Organization-tsi_legacy_lead_company",
+            "CRM Organization-tsi_linkedin_sent",
+            "CRM Organization-tsi_30_day_report",
+            "CRM Organization-tsi_60_day_report",
+            "CRM Organization-tsi_90_day_report",
+            "CRM Organization-tsi_chronic_nonresponder",
+            "CRM Organization-tsi_weak_lead",
+            "CRM Organization-tsi_difficult_personality",
+            "CRM Organization-tsi_time_waster",
+            "CRM Organization-tsi_low_value_client",
+            "CRM Organization-tsi_cost_code",
+            "CRM Organization-tsi_tax_code_name",
+            "CRM Organization-tsi_sales_term_name",
+            "CRM Organization-tsi_exact_accounting_name",
+            "CRM Organization-tsi_invoice_projects_separately",
+            "CRM Organization-tsi_accept_credit_card",
+        ]]]
+    },
+    {
+        "doctype": "CRM Form Script",
+        "filters": [["name", "in", [
+            "TSI Lead Country, State and Master Filters",
+            "TSI Client Country/State Filter",
         ]]]
     },
 ]
@@ -55,10 +116,13 @@ fixtures = [
 
 # Document Events
 # ---------------
-# All three handlers no-op unless Tender CRM Settings is enabled and the relevant
-# switch on it is on, so an administrator can turn the linkage off without an
-# uninstall. Each one is individually guarded — the Sales Order handlers do not
-# assume the Quotation one ran.
+# The Quotation/Sales Order handlers no-op unless Tender CRM Settings is enabled
+# and the relevant switch on it is on, so an administrator can turn the ERPNext
+# linkage off without an uninstall. Each one is individually guarded — the Sales
+# Order handlers do not assume the Quotation one ran.
+#
+# The CRM Lead handlers are unconditional — they exist to keep two fields
+# accurate, not to implement a switchable integration.
 doc_events = {
     "Quotation": {
         # Submitting a quotation is the moment a deal is genuinely at proposal
@@ -73,6 +137,16 @@ doc_events = {
         # A cancelled order is no longer evidence of a won deal. Clears the stamp
         # so the deal does not keep pointing at a cancelled document.
         "on_cancel": "tender_crm.crm_overrides.erpnext_link.unlink_deal_on_sales_order_cancel",
+    },
+    "CRM Lead": {
+        # Historical leads from the legacy CRM import set these two fields
+        # directly from the CSV (tsi_importing flag suppresses both handlers —
+        # see crm_overrides/lead_import.py). This is what keeps them accurate
+        # for every lead edited normally from here on.
+        "on_update": [
+            "tender_crm.crm_overrides.lead_import.stamp_status_change",
+            "tender_crm.crm_overrides.lead_import.stamp_converted_date",
+        ],
     },
 }
 

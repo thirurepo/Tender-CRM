@@ -13,6 +13,11 @@ import frappe
 from tender_crm.seed import seed_all
 from tender_crm.setup import (
     configure_erpnext_integration,
+    ensure_client_form_scripts,
+    ensure_client_import_fields,
+    ensure_disabled_flag_fields,
+    ensure_form_scripts,
+    ensure_lead_import_fields,
     ensure_link_fields,
     seed_settings,
 )
@@ -24,9 +29,19 @@ def after_install():
     Ordered the same way patches.txt is, and for the same reasons: the pipeline has
     to exist before a setting can point at one of its statuses, and the link fields
     have to exist before the integration is switched on and starts writing to them.
+
+    Deliberately does NOT seed the legacy CRM's master data (users, territories,
+    lead/client sources/statuses, states) — that is one-time historical data, not
+    application schema, and lives entirely in the one-off import processes. See
+    tender_crm/Import_crm_data/import_leads.py and import_clients.py.
     """
     seed_all()
     ensure_link_fields()
     configure_erpnext_integration()
     seed_settings()
+    ensure_lead_import_fields()
+    ensure_disabled_flag_fields()
+    ensure_form_scripts()
+    ensure_client_import_fields()
+    ensure_client_form_scripts()
     frappe.db.commit()

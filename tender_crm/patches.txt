@@ -11,3 +11,14 @@ tender_crm.patches.seed_tsi_territories
 tender_crm.patches.add_erpnext_link_fields
 tender_crm.patches.configure_erpnext_crm_settings
 tender_crm.patches.seed_tender_crm_settings
+
+# Legacy CRM import schema (see lead_import_schema.py) — permanent app
+# capability, unlike the legacy CRM's actual master/lead data, which is
+# one-time historical data seeded entirely by the one-off import process in
+# tender_crm/tender_crm/Import_crm_data/, not by a patch. See
+# legacy_masters.py's header for why that split matters.
+tender_crm.patches.add_lead_import_fields
+tender_crm.patches.add_master_disabled_flags
+tender_crm.patches.add_lead_form_scripts
+tender_crm.patches.add_client_import_fields
+tender_crm.patches.add_client_form_scripts
