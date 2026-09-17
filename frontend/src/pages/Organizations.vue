@@ -1,5 +1,4 @@
 <template>
-  <div class="tsi-masthead" style="margin: 20px 20px 0">Clients</div>
   <LayoutHeader>
     <template #left-header>
       <ViewBreadcrumbs v-model="viewControls" routeName="Organizations" />
