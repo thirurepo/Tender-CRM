@@ -43,8 +43,9 @@ website_route_rules = [
 # "domains" list); this makes "/" on that domain specifically resolve to
 # /tsi-crm, without touching the site-wide Website Settings.home_page that
 # erp.tendersoftware.in and lms.tendersoftware.in still use. See
-# crm_overrides/website.py for why this has to be a hook, not a doctype field.
-get_website_user_home_page = "tender_crm.crm_overrides.website.get_home_page"
+# crm_overrides/website.py for why this has to run on before_request and not
+# through the more obvious get_website_user_home_page hook.
+before_request = ["tender_crm.crm_overrides.website.set_home_page_for_domain"]
 
 
 # Fixtures
