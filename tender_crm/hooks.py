@@ -39,6 +39,14 @@ website_route_rules = [
     {"from_route": "/tsi-crm/<path:app_path>", "to_route": "tsi_crm"},
 ]
 
+# crm.tendersoftware.in is a domain alias on this site (see site_config.json's
+# "domains" list); this makes "/" on that domain specifically resolve to
+# /tsi-crm, without touching the site-wide Website Settings.home_page that
+# erp.tendersoftware.in and lms.tendersoftware.in still use. See
+# crm_overrides/website.py for why this has to run on before_request and not
+# through the more obvious get_website_user_home_page hook.
+before_request = ["tender_crm.crm_overrides.website.set_home_page_for_domain"]
+
 
 # Fixtures
 # --------
