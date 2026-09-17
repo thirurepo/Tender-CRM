@@ -32,7 +32,10 @@ export const sessionStore = defineStore('crm-session', () => {
     url: 'logout',
     onSuccess() {
       user.value = null
-      window.location.href = '/login?redirect-to=/crm'
+      // Third and last copy of upstream's hardcoded '/crm' in this fork (the
+      // other two were the router's history base and its own login redirect).
+      // Logging out of the TSI app has to send you back to the TSI app.
+      window.location.href = '/login?redirect-to=/tsi-crm'
     },
   })
 
