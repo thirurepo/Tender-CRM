@@ -27,6 +27,10 @@ from tender_crm.pipeline import (
     LOST_REASONS,
     TERRITORIES,
     TERRITORY_ROOT,
+    TICKET_CATEGORIES,
+    TICKET_PRIORITIES,
+    TICKET_STATUSES,
+    TICKET_TYPES,
 )
 from tender_crm.sales_units import SALES_UNITS
 
@@ -48,6 +52,13 @@ LEAD_ORDERING_APPLIED_FLAG = "tender_crm_lead_pipeline_ordering_applied"
 # independent migration and gets its own flag, per the one-flag-per-concern
 # rule this app already learned the hard way once.
 LEAD_RECOLOR_APPLIED_FLAG = "tender_crm_lead_status_recolor_applied"
+
+# The support queue's own one-shots. Its own flags, not shared with the deal or
+# lead ones and not shared with each other: statuses and priorities are two
+# independent orderings, and this app has already been bitten once by a single
+# flag being set by whichever seed ran first and read as "done" by the next.
+TICKET_STATUS_ORDERING_APPLIED_FLAG = "tender_crm_ticket_status_ordering_applied"
+TICKET_PRIORITY_ORDERING_APPLIED_FLAG = "tender_crm_ticket_priority_ordering_applied"
 
 
 def seed_deal_statuses():
@@ -189,6 +200,97 @@ def seed_sales_units():
         )
 
 
+def seed_ticket_statuses():
+    """Create the support queue's stages, and order them once.
+
+    Same two-speed idempotency as the deal and lead pipelines: a missing status
+    is created on every run, but re-ordering and re-colouring statuses that
+    already exist would undo whatever the support lead arranged on the kanban
+    board, so that half happens exactly once and is then left alone.
+    """
+    ordering_applied = frappe.db.get_global(TICKET_STATUS_ORDERING_APPLIED_FLAG)
+
+    for position, (status, category, color) in enumerate(TICKET_STATUSES, start=1):
+        if not frappe.db.exists("Ticket Status", status):
+            frappe.get_doc(
+                {
+                    "doctype": "Ticket Status",
+                    "status": status,
+                    "category": category,
+                    "position": position,
+                    "color": color,
+                }
+            ).insert(ignore_permissions=True)
+        elif not ordering_applied:
+            # Category is left alone for the same reason CRM Deal Status' type
+            # is: it is the one property with meaning beyond presentation, and
+            # a site that has deliberately re-categorised a status should keep
+            # that decision.
+            frappe.db.set_value(
+                "Ticket Status", status, {"position": position, "color": color}
+            )
+
+    if not ordering_applied:
+        frappe.db.set_global(TICKET_STATUS_ORDERING_APPLIED_FLAG, "1")
+
+
+def seed_ticket_priorities():
+    """Create the priority levels, and order them once.
+
+    Ordering matters more here than anywhere else in this module — a queue
+    sorted by priority is unusable if Urgent sorts below Low — but it is still
+    a one-shot, because a site is entitled to decide its own order.
+    """
+    ordering_applied = frappe.db.get_global(TICKET_PRIORITY_ORDERING_APPLIED_FLAG)
+
+    for position, (priority, color) in enumerate(TICKET_PRIORITIES, start=1):
+        if not frappe.db.exists("Ticket Priority", priority):
+            frappe.get_doc(
+                {
+                    "doctype": "Ticket Priority",
+                    "priority_name": priority,
+                    "position": position,
+                    "color": color,
+                }
+            ).insert(ignore_permissions=True)
+        elif not ordering_applied:
+            frappe.db.set_value(
+                "Ticket Priority", priority, {"position": position, "color": color}
+            )
+
+    if not ordering_applied:
+        frappe.db.set_global(TICKET_PRIORITY_ORDERING_APPLIED_FLAG, "1")
+
+
+def seed_ticket_types():
+    """Create the ticket types.
+
+    Creation-only and unflagged, like the lost reasons: there is no position or
+    colour on this doctype for a re-run to fight a human over.
+    """
+    for type_name in TICKET_TYPES:
+        if frappe.db.exists("Ticket Type", type_name):
+            continue
+        frappe.get_doc(
+            {"doctype": "Ticket Type", "type_name": type_name}
+        ).insert(ignore_permissions=True)
+
+
+def seed_ticket_categories():
+    """Create the starter product categories.
+
+    Creation-only, like seed_ticket_types(). This list is a guess at TSI's
+    product surface and is expected to be edited on the site; nothing in the
+    code reads a category by name, so editing it breaks nothing.
+    """
+    for category_name in TICKET_CATEGORIES:
+        if frappe.db.exists("Ticket Category", category_name):
+            continue
+        frappe.get_doc(
+            {"doctype": "Ticket Category", "category_name": category_name}
+        ).insert(ignore_permissions=True)
+
+
 def seed_all():
     """Everything, in dependency order. Used by after_install."""
     seed_deal_statuses()
@@ -197,3 +299,7 @@ def seed_all():
     seed_lost_reasons()
     seed_territories()
     seed_sales_units()
+    seed_ticket_statuses()
+    seed_ticket_priorities()
+    seed_ticket_types()
+    seed_ticket_categories()

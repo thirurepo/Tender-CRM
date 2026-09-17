@@ -14,7 +14,13 @@
   "link_sales_order_to_deal",
   "column_break_so",
   "close_deal_on_sales_order",
-  "won_deal_status"
+  "won_deal_status",
+  "tickets_section",
+  "default_ticket_status",
+  "default_ticket_priority",
+  "column_break_tickets",
+  "default_ticket_team",
+  "support_email_account"
  ],
  "fields": [
   {
@@ -83,6 +89,43 @@
    "fieldtype": "Link",
    "label": "Won Deal Status",
    "options": "CRM Deal Status"
+  },
+  {
+   "fieldname": "tickets_section",
+   "fieldtype": "Section Break",
+   "label": "Tickets"
+  },
+  {
+   "description": "Status a ticket opens in when nobody picked one — including every ticket created from an inbound support email.",
+   "fieldname": "default_ticket_status",
+   "fieldtype": "Link",
+   "label": "Default Status",
+   "options": "Ticket Status"
+  },
+  {
+   "description": "Priority a ticket opens at when nobody picked one.",
+   "fieldname": "default_ticket_priority",
+   "fieldtype": "Link",
+   "label": "Default Priority",
+   "options": "Ticket Priority"
+  },
+  {
+   "fieldname": "column_break_tickets",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Team an unrouted ticket lands with. Leave empty to leave new tickets unrouted.",
+   "fieldname": "default_ticket_team",
+   "fieldtype": "Link",
+   "label": "Default Team",
+   "options": "Ticket Team"
+  },
+  {
+   "description": "The support mailbox. Naming it here makes tender_crm.setup.configure_ticket_email_intake set that account's append_to to Ticket, so mail arriving on it opens a ticket and replies thread onto it. Create the Email Account and enter its credentials yourself — this app never writes mail credentials.",
+   "fieldname": "support_email_account",
+   "fieldtype": "Link",
+   "label": "Support Email Account",
+   "options": "Email Account"
   }
  ],
  "index_web_pages_for_search": 1,

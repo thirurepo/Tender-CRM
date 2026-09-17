@@ -33,3 +33,13 @@ tender_crm.patches.add_client_form_scripts
 # Comment-tsi_note_type — tsi_legacy_comment_id's insert_after anchor.
 tender_crm.patches.add_contact_import_fields
 tender_crm.patches.add_comment_import_fields
+
+# Ticketing. Order matters for the same reason as everywhere above: the masters
+# have to exist before a setting can point at one, the role has to exist before
+# the ticketing doctypes' permissions mean anything, and the email intake step
+# reads the mailbox out of the settings the step before it writes.
+tender_crm.patches.seed_ticket_masters
+tender_crm.patches.add_support_agent_role
+tender_crm.patches.add_ticket_side_panel_layouts
+tender_crm.patches.seed_ticket_settings
+tender_crm.patches.configure_ticket_email_intake

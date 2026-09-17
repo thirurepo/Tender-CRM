@@ -81,3 +81,65 @@ TERRITORIES = [
     "Central India",
     "International",
 ]
+
+
+# The support queue, as data.
+# ---------------------------
+# Same shape and the same reasons as the two pipelines above: one definition
+# shared by the seed patches and after_install, list order defines `position`.
+#
+# (status, category, color)
+#
+# `category` is Open / Paused / Resolved / Closed and is what every report
+# groups by — open work is Open + Paused. Keeping Resolved and Closed apart
+# matters to more than reporting: Ticket.stamp_dates() reads the first to set
+# `resolution_date` and the second to set `closed_at`, so collapsing them would
+# make one of those two timestamps unreachable.
+#
+# "Awaiting Info" is Paused rather than Open on purpose. A ticket blocked on a
+# reply from the person who raised it is not work the support team can do, and
+# counting it as open makes the queue look permanently worse than it is —
+# the same complaint that put "Technical Evaluation" in DEAL_STATUSES.
+TICKET_STATUSES = [
+    ("New", "Open", "gray"),
+    ("Assigned", "Open", "cyan"),
+    ("In Progress", "Open", "orange"),
+    ("Awaiting Info", "Paused", "amber"),
+    ("Resolved", "Resolved", "green"),
+    ("Closed", "Closed", "black"),
+]
+
+# (priority, color)
+#
+# List order is the sort order, lowest position first: a queue sorted by
+# priority has to put Urgent at the top, and the names do not sort that way.
+TICKET_PRIORITIES = [
+    ("Urgent", "red"),
+    ("High", "orange"),
+    ("Medium", "blue"),
+    ("Low", "gray"),
+]
+
+# What kind of work the ticket is — the axis "are we spending the week on bugs
+# or on training?" is answered by.
+TICKET_TYPES = [
+    "Bug",
+    "Feature Request",
+    "Support Query",
+    "Data Request",
+    "Training",
+    "Other",
+]
+
+# Which part of what TSI sells the ticket concerns. A starter set only: unlike
+# the statuses, nothing in the code reads a category by name, and the support
+# lead is expected to edit this list on the site rather than here.
+TICKET_CATEGORIES = [
+    "Tender Portal",
+    "Bid Preparation",
+    "Document Management",
+    "Integrations",
+    "Reports",
+    "Account & Billing",
+    "Other",
+]
