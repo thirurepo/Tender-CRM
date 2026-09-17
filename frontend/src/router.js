@@ -145,8 +145,14 @@ const handleMobileView = (componentName) => {
   return window.innerWidth < 768 ? `Mobile${componentName}` : componentName
 }
 
+// This fork is served at /tsi-crm (see tender_crm/hooks.py website_route_rules),
+// not at crm's own /crm. The base was a byte-copy of upstream that the fork
+// never corrected: with '/crm' here, vue-router strips a leading '/crm' that is
+// never present, so every deep link (e.g. /tsi-crm/tickets/TKT-00001) failed to
+// match a route and fell through to Invalid Page. Only the shell's entry path
+// worked, because it needs no route match.
 let router = createRouter({
-  history: createWebHistory('/crm'),
+  history: createWebHistory('/tsi-crm'),
   routes,
 })
 
@@ -219,7 +225,9 @@ router.beforeEach(async (to, from, next) => {
       next({ name: route_name, params: { viewType: type } })
     }
   } else if (!isLoggedIn) {
-    window.location.href = '/login?redirect-to=/crm'
+    // Same reason as the history base above: send an unauthenticated user back
+    // to this fork, not to crm's vanilla app.
+    window.location.href = '/login?redirect-to=/tsi-crm'
   } else if (to.matched.length === 0) {
     next({ name: 'Invalid Page' })
   } else if (['Deal', 'Lead'].includes(to.name) && !to.hash) {
