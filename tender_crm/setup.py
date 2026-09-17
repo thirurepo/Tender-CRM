@@ -389,14 +389,54 @@ SIDE_PANEL_LAYOUTS = [
 ]
 
 
+# Kept out of SIDE_PANEL_LAYOUTS so the ticket step can be its own patch, and
+# so nothing here runs on a site that predates the ticketing doctypes.
+TICKET_SIDE_PANEL_LAYOUTS = [
+    {
+        "dt": "Ticket",
+        "type": "Side Panel",
+        # What an agent needs while reading the conversation: who it is for,
+        # how urgent, who owns it, and what it concerns.
+        "fields": [
+            "status",
+            "priority",
+            "ticket_type",
+            "category",
+            "team",
+            "assigned_agent",
+            "organization",
+            "tsi_sales_unit",
+            "raised_by",
+            "opening_date",
+        ],
+    },
+]
+
+
 def ensure_side_panel_layouts():
-    """Give CRM Lead / CRM Organization a default Side Panel layout.
+    """Give CRM Lead / CRM Organization a default Side Panel layout."""
+    _install_side_panel_layouts(SIDE_PANEL_LAYOUTS)
+
+
+def ensure_ticket_side_panel_layouts():
+    """Give Ticket a default Side Panel layout.
+
+    Load-bearing, not cosmetic — see _install_side_panel_layouts. Its own
+    entry point rather than another entry in SIDE_PANEL_LAYOUTS so that it can
+    be registered as its own patch and so a site without the ticketing
+    doctypes is not dragged through it.
+    """
+    _install_side_panel_layouts(TICKET_SIDE_PANEL_LAYOUTS)
+
+
+def _install_side_panel_layouts(specs):
+    """Shared installer behind the two ensure_*_side_panel_layouts functions.
 
     Unlike Quick Entry or Data Fields, crm's `get_sidepanel_sections` has no
     generated fallback — a doctype with no "Side Panel" CRM Fields Layout
-    record shows an empty sidebar, full stop. crm ships no default for either
-    doctype, so without this the design's "Details"/"Client fields" sidebar
-    sections would simply never appear.
+    record shows an empty sidebar, full stop. crm ships no default for any of
+    these doctypes, so without this the design's sidebar sections would simply
+    never appear.
 
     Create-only, like the lost reasons and territory leaves: this is exactly
     the layout a Sales Manager can already hand-edit from Settings, so once a
@@ -405,7 +445,7 @@ def ensure_side_panel_layouts():
     """
     import json
 
-    for spec in SIDE_PANEL_LAYOUTS:
+    for spec in specs:
         doctype = spec["dt"]
 
         if not frappe.db.exists("DocType", doctype):
@@ -536,3 +576,118 @@ def _default_company():
 
     companies = frappe.get_all("Company", pluck="name", limit=2)
     return companies[0] if len(companies) == 1 else None
+
+
+# The role the ticketing doctypes grant their permissions to. Frappe skips link
+# validation when it imports a doctype JSON (modules/import_file.py sets
+# ignore_links), so the doctypes sync happily against a role that does not exist
+# yet — the permission rows simply apply to nobody until it does.
+SUPPORT_AGENT_ROLE = "Support Agent"
+
+
+def ensure_support_agent_role():
+    """Create the Support Agent role the ticketing doctypes are permissioned to.
+
+    Has to be its own step rather than a fixture: `bench migrate` syncs
+    doctypes before it runs patches, and `bench install-app` never runs patches
+    at all, so the only way both paths end up with the role is an idempotent
+    function called from install.py and from a patch.
+
+    `desk_access` is on because an agent works the queue in the Tender CRM SPA,
+    which authenticates as a desk user.
+    """
+    if frappe.db.exists("Role", SUPPORT_AGENT_ROLE):
+        return
+
+    frappe.get_doc(
+        {
+            "doctype": "Role",
+            "role_name": SUPPORT_AGENT_ROLE,
+            "desk_access": 1,
+        }
+    ).insert(ignore_permissions=True)
+
+
+def seed_ticket_settings():
+    """Fill Tender CRM Settings' ticket defaults, once, without stamping on anyone.
+
+    Cannot ride on seed_settings(): that one bails out entirely the moment the
+    single has ever been saved, which on any site that already has this app
+    installed is always. So this writes per field, and only into a field that is
+    still empty — a re-run on a configured site changes nothing, and an
+    administrator who cleared a field on purpose only gets it back if the seed
+    would have chosen the same value anyway.
+
+    `default_ticket_team` and `support_email_account` are deliberately left
+    unset. TSI's support structure and its mailbox are site facts this app
+    cannot guess, and a wrong guess at the mailbox would start threading real
+    mail onto the wrong doctype.
+    """
+    settings = frappe.get_single(SETTINGS)
+    changed = False
+
+    if not settings.default_ticket_status:
+        # The lowest-positioned Open status, rather than the literal "New":
+        # seed.py owns the status names and this should follow it, not repeat it.
+        new_status = frappe.get_all(
+            "Ticket Status",
+            filters={"category": "Open", "disabled": 0},
+            order_by="position asc",
+            pluck="name",
+            limit=1,
+        )
+        if new_status:
+            settings.default_ticket_status = new_status[0]
+            changed = True
+
+    if not settings.default_ticket_priority and frappe.db.exists(
+        "Ticket Priority", "Medium"
+    ):
+        # Medium by name, because "the middle one" is not something position
+        # can express — a site with two priorities has no middle.
+        settings.default_ticket_priority = "Medium"
+        changed = True
+
+    if changed:
+        settings.save(ignore_permissions=True)
+
+
+def configure_ticket_email_intake():
+    """Point the configured support mailbox at Ticket.
+
+    Email intake is a DocType flag, not code: Ticket carries `email_append_to`,
+    `subject_field` and `sender_field`, and frappe's IMAP receiver then creates
+    a ticket for any mail arriving on an Email Account whose `append_to` names
+    it (frappe/email/receive.py) and threads replies onto the existing ticket
+    by subject and sender. All this function does is set `append_to` on the
+    account an administrator has already nominated in Tender CRM Settings.
+
+    It deliberately never creates the Email Account and never writes
+    credentials — those are secrets, and per this app's rules they come from an
+    administrator or site config, never from code. Creating the mailbox is a
+    documented manual step.
+
+    Re-runs are safe and non-destructive: an account already pointed somewhere
+    else is left alone, because redirecting a live mailbox away from whatever
+    it is currently filing into would silently strand incoming mail.
+    """
+    account = frappe.db.get_single_value(SETTINGS, "support_email_account")
+    if not account or not frappe.db.exists("Email Account", account):
+        return
+
+    current = frappe.db.get_value("Email Account", account, "append_to")
+    if current == "Ticket":
+        return
+    if current:
+        frappe.log_error(
+            title="Tender CRM: support mailbox already routed",
+            message=(
+                f"Email Account {account} is configured in {SETTINGS} as the support "
+                f"mailbox, but its append_to is already {current!r}. Leaving it alone "
+                "rather than redirecting a live mailbox; change it by hand if Ticket "
+                "is what you want."
+            ),
+        )
+        return
+
+    frappe.db.set_value("Email Account", account, "append_to", "Ticket")

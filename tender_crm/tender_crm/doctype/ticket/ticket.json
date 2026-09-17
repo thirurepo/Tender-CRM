@@ -1,0 +1,237 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "TKT-.#####",
+ "creation": "2026-09-17 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "email_append_to": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "subject",
+  "raised_by",
+  "column_break_identity",
+  "status",
+  "priority",
+  "classification_section",
+  "ticket_type",
+  "category",
+  "column_break_classification",
+  "team",
+  "assigned_agent",
+  "tsi_sales_unit",
+  "reference_section",
+  "reference_doctype",
+  "reference_name",
+  "column_break_reference",
+  "organization",
+  "description_section",
+  "description",
+  "dates_section",
+  "opening_date",
+  "first_responded_on",
+  "column_break_dates",
+  "resolution_date",
+  "closed_at",
+  "log_section",
+  "status_change_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Subject",
+   "reqd": 1
+  },
+  {
+   "description": "Who reported it. Populated automatically from the From address when a ticket arrives by email — this is the DocType's `sender_field`, which is why it is Data with Email in options rather than a Link to Contact.",
+   "fieldname": "raised_by",
+   "fieldtype": "Data",
+   "label": "Raised By (Email)",
+   "options": "Email"
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Ticket Status",
+   "search_index": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Priority",
+   "options": "Ticket Priority",
+   "search_index": 1
+  },
+  {
+   "fieldname": "classification_section",
+   "fieldtype": "Section Break",
+   "label": "Classification"
+  },
+  {
+   "fieldname": "ticket_type",
+   "fieldtype": "Link",
+   "label": "Ticket Type",
+   "options": "Ticket Type"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "label": "Category",
+   "options": "Ticket Category"
+  },
+  {
+   "fieldname": "column_break_classification",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Routes the ticket to a group of agents. The team's Assignment Rule (frappe core) is what actually picks the individual.",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Ticket Team",
+   "search_index": 1
+  },
+  {
+   "description": "The named owner. Separate from frappe's _assign: _assign is the ToDo-backed assignment an Assignment Rule writes and may hold several people, this is the one agent answerable for the ticket.",
+   "fieldname": "assigned_agent",
+   "fieldtype": "Link",
+   "label": "Assigned Agent",
+   "options": "User",
+   "search_index": 1
+  },
+  {
+   "fieldname": "tsi_sales_unit",
+   "fieldtype": "Link",
+   "label": "Sales Unit",
+   "options": "TSI Sales Unit"
+  },
+  {
+   "fieldname": "reference_section",
+   "fieldtype": "Section Break",
+   "label": "Concerns"
+  },
+  {
+   "description": "What this ticket is about. A ticket is internal-only and is never seen by a client, but it does point at one.",
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference Type",
+   "link_filters": "{\"name\": [\"in\", [\"CRM Lead\", \"CRM Organization\", \"CRM Deal\", \"User\"]]}",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "in_standard_filter": 1,
+   "label": "Reference",
+   "options": "reference_doctype",
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_reference",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Resolved in validate() from whatever the reference is: an Organization is itself, a Deal or Lead yields its organization, a User yields none. Denormalised on purpose — filtering and per-client reporting on a Dynamic Link is painful, and this makes the Client screen's Tickets tab a plain indexed filter.",
+   "fieldname": "organization",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Client",
+   "options": "CRM Organization",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "description_section",
+   "fieldtype": "Section Break",
+   "label": "Description"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description"
+  },
+  {
+   "fieldname": "dates_section",
+   "fieldtype": "Section Break",
+   "label": "Dates"
+  },
+  {
+   "fieldname": "opening_date",
+   "fieldtype": "Datetime",
+   "label": "Opened On",
+   "read_only": 1
+  },
+  {
+   "description": "Nothing stamps this yet. SLA is deliberately out of scope for this phase; the field exists so that the first response time is recordable by hand and so adding SLA later is not a schema migration.",
+   "fieldname": "first_responded_on",
+   "fieldtype": "Datetime",
+   "label": "First Responded On"
+  },
+  {
+   "fieldname": "column_break_dates",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Stamped when the ticket first reaches a status whose category is Resolved or Closed, and cleared if it is reopened.",
+   "fieldname": "resolution_date",
+   "fieldtype": "Datetime",
+   "label": "Resolved On",
+   "read_only": 1
+  },
+  {
+   "description": "Stamped when the ticket reaches a status whose category is Closed, and cleared if it leaves one.",
+   "fieldname": "closed_at",
+   "fieldtype": "Datetime",
+   "label": "Closed On",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "log_section",
+   "fieldtype": "Section Break",
+   "label": "Status History"
+  },
+  {
+   "fieldname": "status_change_log",
+   "fieldtype": "Table",
+   "label": "Status Change Log",
+   "options": "CRM Status Change Log",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-17 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Tender CRM",
+ "name": "Ticket",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Sales Manager", "share": 1, "write": 1},
+  {"create": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Support Agent", "share": 1, "write": 1}
+ ],
+ "row_format": "Dynamic",
+ "sender_field": "raised_by",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "subject_field": "subject",
+ "title_field": "subject",
+ "track_changes": 1
+}

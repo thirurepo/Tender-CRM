@@ -13,6 +13,7 @@ import frappe
 from tender_crm.seed import seed_all
 from tender_crm.setup import (
     configure_erpnext_integration,
+    configure_ticket_email_intake,
     ensure_client_form_scripts,
     ensure_client_import_fields,
     ensure_client_lead_fields,
@@ -23,7 +24,10 @@ from tender_crm.setup import (
     ensure_lead_import_fields,
     ensure_link_fields,
     ensure_side_panel_layouts,
+    ensure_support_agent_role,
+    ensure_ticket_side_panel_layouts,
     seed_settings,
+    seed_ticket_settings,
 )
 
 
@@ -36,6 +40,9 @@ def after_install():
     seed_all() creates TSI Sales Unit rows before ensure_client_lead_fields() adds
     the Link fields that point at them, though field creation does not actually
     depend on any row existing — it is just the more sensible read order.
+
+    The ticketing steps run last, after seed_all() has created the ticket
+    masters they configure defaults against.
 
     Deliberately does NOT seed the legacy CRM's master data (users, territories,
     lead/client sources/statuses, states) — that is one-time historical data, not
@@ -55,4 +62,14 @@ def after_install():
     ensure_client_form_scripts()
     ensure_contact_import_fields()
     ensure_comment_import_fields()
+
+    # Ticketing. seed_all() above has already created the ticket masters, so the
+    # settings defaults below have something to point at, and the role has to
+    # exist before anyone can be given it. Email intake goes last because it
+    # reads the mailbox out of the settings the step before it writes.
+    ensure_support_agent_role()
+    ensure_ticket_side_panel_layouts()
+    seed_ticket_settings()
+    configure_ticket_email_intake()
+
     frappe.db.commit()

@@ -199,6 +199,26 @@ doc_events = {
 }
 
 
+# Ticketing
+# ---------
+# Deliberately absent from this file, and that absence is the point.
+#
+# The support queue is built out of doctypes this app owns (Ticket and its
+# masters, in tender_crm/tender_crm/doctype/), not out of changes to somebody
+# else's, so there is nothing to wire:
+#
+#   * No `website_route_rules` — the /tsi-crm/<path> rule above already carries
+#     /tsi-crm/tickets and every ticket deep link.
+#   * No `fixtures` — every ticket field lives on a doctype we own, so not one
+#     of them is a Custom Field.
+#   * No `doc_events` — Ticket's own behaviour belongs in its controller. A
+#     cross-app event handler is what you reach for when the doctype is not
+#     yours; here it is.
+#   * No inbound email handler — intake is a DocType flag (`email_append_to`,
+#     `subject_field`, `sender_field` on ticket.json) that frappe's own IMAP
+#     receiver acts on. See setup.configure_ticket_email_intake.
+
+
 # Installation
 # ------------
 # Seeds the pipeline on a fresh install. The same work is done idempotently by

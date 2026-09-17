@@ -12,6 +12,7 @@ from frappe.model.document import Document
 class TenderCRMSettings(Document):
     def validate(self):
         self.validate_status_directions()
+        self.validate_ticket_defaults()
 
     def validate_status_directions(self):
         """Refuse a configuration that would move deals the wrong way.
@@ -43,6 +44,28 @@ class TenderCRMSettings(Document):
                         "requires a status of type Won."
                     ).format(frappe.bold(self.won_deal_status), status_type or _("missing"))
                 )
+
+    def validate_ticket_defaults(self):
+        """Refuse a default status that would open tickets already finished.
+
+        Same stance as validate_status_directions above: the cost of catching a
+        mis-click here is nothing, and the cost of not catching it is a support
+        queue whose every new ticket — including every inbound email — arrives
+        Resolved and invisible.
+        """
+        if not self.default_ticket_status:
+            return
+
+        category = frappe.db.get_value(
+            "Ticket Status", self.default_ticket_status, "category"
+        )
+        if category not in ("Open", "Paused"):
+            frappe.throw(
+                _(
+                    "{0} is a {1} status. A ticket has to open as work that is still "
+                    "outstanding — pick a status whose category is Open or Paused."
+                ).format(frappe.bold(self.default_ticket_status), category or _("missing"))
+            )
 
 
 def get_settings():
