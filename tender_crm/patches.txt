@@ -26,3 +26,10 @@ tender_crm.patches.add_master_disabled_flags
 tender_crm.patches.add_lead_form_scripts
 tender_crm.patches.add_client_import_fields
 tender_crm.patches.add_client_form_scripts
+
+# Legacy CRM client-contact and comment/reply import schema (see
+# contact_import_schema.py / comment_import_schema.py). add_comment_import_fields
+# must come after add_client_lead_fields (above), which created
+# Comment-tsi_note_type — tsi_legacy_comment_id's insert_after anchor.
+tender_crm.patches.add_contact_import_fields
+tender_crm.patches.add_comment_import_fields

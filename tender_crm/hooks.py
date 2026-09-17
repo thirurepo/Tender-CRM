@@ -66,6 +66,12 @@ website_route_rules = [
 # ensure_disabled_flag_fields / ensure_form_scripts / ensure_client_form_scripts
 # for an already-migrated site.
 #
+# The Contact-tsi_* fields carry the legacy client-contact import's schema
+# (see contact_import_schema.py); the Comment-tsi_legacy_comment_id/
+# tsi_reply_to_comment pair carries the legacy comment/reply import's (see
+# comment_import_schema.py). Same two-path split again: also created by
+# tender_crm.setup.ensure_contact_import_fields / ensure_comment_import_fields.
+#
 # Edit fixtures/custom_field.json by hand. Do not run `bench export-fixtures` on
 # this bench — it is known to wipe the sibling app's fixture JSON.
 fixtures = [
@@ -130,6 +136,20 @@ fixtures = [
             "CRM Organization-tsi_client_since",
             "CRM Organization-tsi_developers",
             "Comment-tsi_note_type",
+            "Contact-tsi_organization",
+            "Contact-tsi_legacy_primary_email",
+            "Contact-tsi_reporting_contact",
+            "Contact-tsi_billing_contact",
+            "Contact-tsi_holiday_email_only",
+            "Contact-tsi_is_rmr",
+            "Contact-tsi_rmr_added_by",
+            "Contact-tsi_linkedin_sent",
+            "Contact-tsi_status",
+            "Contact-tsi_approve_status",
+            "Contact-tsi_legacy_created_by",
+            "Contact-tsi_added_date",
+            "Comment-tsi_legacy_comment_id",
+            "Comment-tsi_reply_to_comment",
         ]]]
     },
     {

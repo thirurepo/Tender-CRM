@@ -16,6 +16,8 @@ from tender_crm.setup import (
     ensure_client_form_scripts,
     ensure_client_import_fields,
     ensure_client_lead_fields,
+    ensure_comment_import_fields,
+    ensure_contact_import_fields,
     ensure_disabled_flag_fields,
     ensure_form_scripts,
     ensure_lead_import_fields,
@@ -51,4 +53,6 @@ def after_install():
     ensure_form_scripts()
     ensure_client_import_fields()
     ensure_client_form_scripts()
+    ensure_contact_import_fields()
+    ensure_comment_import_fields()
     frappe.db.commit()

@@ -629,5 +629,161 @@
   "options": "\nPrivate note\nDev team note\nPermanent note\nAudio note",
   "insert_after": "content",
   "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_organization",
+  "dt": "Contact",
+  "fieldname": "tsi_organization",
+  "label": "Organization",
+  "fieldtype": "Link",
+  "options": "CRM Organization",
+  "insert_after": "company_name",
+  "description": "Resolved from the legacy CSV's Company column against an already-imported CRM Organization — see tender_crm/Import_crm_data/import_client_contacts.py.",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_legacy_primary_email",
+  "dt": "Contact",
+  "fieldname": "tsi_legacy_primary_email",
+  "label": "Legacy Primary Email",
+  "fieldtype": "Data",
+  "options": "Email",
+  "read_only": 1,
+  "insert_after": "tsi_organization",
+  "description": "The legacy CRM's separate 'Primary Email' column — differs from this contact's own email on part of the source data, and looks like a legacy account/login grouping key shared across people at the same org rather than this person's own address, so it is kept as a raw reference rather than guessed at.",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_reporting_contact",
+  "dt": "Contact",
+  "fieldname": "tsi_reporting_contact",
+  "label": "Reporting Contact",
+  "fieldtype": "Check",
+  "insert_after": "tsi_legacy_primary_email",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_billing_contact",
+  "dt": "Contact",
+  "fieldname": "tsi_billing_contact",
+  "label": "Billing Contact",
+  "fieldtype": "Check",
+  "insert_after": "tsi_reporting_contact",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_holiday_email_only",
+  "dt": "Contact",
+  "fieldname": "tsi_holiday_email_only",
+  "label": "Holiday Email Only",
+  "fieldtype": "Check",
+  "insert_after": "tsi_billing_contact",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_is_rmr",
+  "dt": "Contact",
+  "fieldname": "tsi_is_rmr",
+  "label": "Is RMR",
+  "fieldtype": "Check",
+  "insert_after": "tsi_holiday_email_only",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_rmr_added_by",
+  "dt": "Contact",
+  "fieldname": "tsi_rmr_added_by",
+  "label": "RMR Added By",
+  "fieldtype": "Link",
+  "options": "User",
+  "insert_after": "tsi_is_rmr",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_linkedin_sent",
+  "dt": "Contact",
+  "fieldname": "tsi_linkedin_sent",
+  "label": "LinkedIn Sent",
+  "fieldtype": "Check",
+  "insert_after": "tsi_rmr_added_by",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_status",
+  "dt": "Contact",
+  "fieldname": "tsi_status",
+  "label": "Status",
+  "fieldtype": "Check",
+  "default": "1",
+  "insert_after": "tsi_linkedin_sent",
+  "description": "Legacy CRM's own enabled/active flag for this contact.",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_approve_status",
+  "dt": "Contact",
+  "fieldname": "tsi_approve_status",
+  "label": "Approve Status",
+  "fieldtype": "Check",
+  "insert_after": "tsi_status",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_legacy_created_by",
+  "dt": "Contact",
+  "fieldname": "tsi_legacy_created_by",
+  "label": "Legacy Created By",
+  "fieldtype": "Link",
+  "options": "User",
+  "insert_after": "tsi_approve_status",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Contact-tsi_added_date",
+  "dt": "Contact",
+  "fieldname": "tsi_added_date",
+  "label": "Added Date",
+  "fieldtype": "Date",
+  "insert_after": "tsi_legacy_created_by",
+  "description": "Date this contact was first entered in the legacy CRM.",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Comment-tsi_legacy_comment_id",
+  "dt": "Comment",
+  "fieldname": "tsi_legacy_comment_id",
+  "label": "Legacy Comment ID",
+  "fieldtype": "Data",
+  "unique": 1,
+  "read_only": 1,
+  "no_copy": 1,
+  "insert_after": "tsi_note_type",
+  "description": "Deterministic key for a legacy CRM comment/reply row — '<lead id>:<comment id>' for a comment, '<lead id>:<comment id>:reply:<reply id>' for a reply. Lets both import scripts re-run without creating duplicates, and is how import_lead_comment_replies.py finds a reply's parent comment.",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Comment-tsi_reply_to_comment",
+  "dt": "Comment",
+  "fieldname": "tsi_reply_to_comment",
+  "label": "Reply To",
+  "fieldtype": "Link",
+  "options": "Comment",
+  "insert_after": "tsi_legacy_comment_id",
+  "description": "Set only on rows imported from the legacy CRM's replies CSV — the parent Comment this one replied to. The CRM UI does not render nested threads; this preserves the relationship as data.",
+  "module": "Tender CRM"
  }
 ]
