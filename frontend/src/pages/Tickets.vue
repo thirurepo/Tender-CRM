@@ -11,7 +11,6 @@
   merely points at one.
 -->
 <template>
-  <div class="tsi-masthead" style="margin: 20px 20px 0">Tickets</div>
   <LayoutHeader>
     <template #left-header>
       <ViewBreadcrumbs v-model="viewControls" routeName="Tickets" />
