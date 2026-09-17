@@ -9,7 +9,6 @@ Everything Tender CRM changes about the behaviour of Frappe CRM and ERPNext.
 | --- | --- |
 | `erpnext_link.py` | Keeps a CRM Deal and the ERPNext Quotation / Sales Order raised from it pointing at each other, and moves the deal along the pipeline as those documents are submitted. |
 | `lead_import.py` | Keeps `tsi_converted_date` / `tsi_last_status_change` on CRM Lead accurate for leads worked normally, after the legacy CRM import (see `tender_crm/Import_crm_data/import_leads.py`) sets both directly from historical CSV data. |
-| `website.py` | Makes `crm.tendersoftware.in` default to `/tsi-crm` via `before_request`, without changing the home page on the site's other domain aliases (see the module docstring — the obvious `get_website_user_home_page` hook doesn't work here because Frappe caches the resolved home page per user, not per domain). |
 
 ## The gap this closes
 
