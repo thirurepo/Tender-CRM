@@ -155,8 +155,13 @@
           :columns="columns"
           :options="{ selectable: false, showTooltip: false }"
         />
+        <LinkedTicketsList
+          v-if="tab.label === 'Tickets'"
+          :filters="{ organization: props.organizationId }"
+          :cacheKey="props.organizationId"
+        />
         <EmptyState
-          v-if="!rows.length"
+          v-if="tab.label !== 'Tickets' && !rows.length"
           :icon="tab.icon"
           :name="__(tab.label)"
         />
@@ -185,6 +190,8 @@ import Icon from '@/components/Icon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import DealsListView from '@/components/ListViews/DealsListView.vue'
 import ContactsListView from '@/components/ListViews/ContactsListView.vue'
+import LinkedTicketsList from '@/components/LinkedTicketsList.vue'
+import TicketsIcon from '@/components/Icons/TicketsIcon.vue'
 import WebsiteIcon from '@/components/Icons/WebsiteIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
@@ -381,7 +388,26 @@ const tabs = [
     icon: ContactsIcon,
     count: computed(() => contacts.data?.length),
   },
+  {
+    label: 'Tickets',
+    icon: TicketsIcon,
+    count: computed(() => ticketCount.data ?? 0),
+  },
 ]
+
+// Only the badge. The rows are LinkedTicketsList's own business, and it does
+// not fetch them until the tab is opened — the badge has to be right before
+// then. This is the payoff for Ticket's denormalised `organization`: one
+// indexed equality instead of a walk through the Dynamic Link.
+const ticketCount = createResource({
+  url: 'frappe.client.get_count',
+  params: {
+    doctype: 'Ticket',
+    filters: { organization: props.organizationId },
+  },
+  auto: true,
+  transform: (value) => value ?? 0,
+})
 
 const deals = createListResource({
   type: 'list',

@@ -61,6 +61,18 @@ const routes = [
     props: true,
   },
   {
+    alias: '/tickets',
+    path: '/tickets/view/:viewType?',
+    name: 'Tickets',
+    component: () => import('@/pages/Tickets.vue'),
+  },
+  {
+    path: '/tickets/:ticketId',
+    name: 'Ticket',
+    component: () => import('@/pages/Ticket.vue'),
+    props: true,
+  },
+  {
     alias: '/notes',
     path: '/notes/view/:viewType?',
     name: 'Notes',
@@ -230,15 +242,20 @@ router.beforeEach(async (to, from, next) => {
     window.location.href = '/login?redirect-to=/tsi-crm'
   } else if (to.matched.length === 0) {
     next({ name: 'Invalid Page' })
-  } else if (['Deal', 'Lead'].includes(to.name) && !to.hash) {
-    let storageKey = to.name === 'Deal' ? 'lastDealTab' : 'lastLeadTab'
-    const activeTab = localStorage.getItem(storageKey) || 'activity'
+  } else if (['Deal', 'Lead', 'Ticket'].includes(to.name) && !to.hash) {
+    const tabStorageKeys = {
+      Deal: 'lastDealTab',
+      Lead: 'lastLeadTab',
+      Ticket: 'lastTicketTab',
+    }
+    const activeTab = localStorage.getItem(tabStorageKeys[to.name]) || 'activity'
     const hash = '#' + activeTab
     next({ ...to, hash })
   } else if (
     [
       'Leads',
       'Deals',
+      'Tickets',
       'Contacts',
       'Organizations',
       'Notes',
@@ -254,9 +271,12 @@ router.beforeEach(async (to, from, next) => {
     const standardViewTypes = ['list', 'kanban', 'group_by']
 
     if (!viewType) {
+      // Both this map and the route-name list above have to name a route, or
+      // its list view loads with no default view and no error.
       const doctypeMap = {
         Leads: 'CRM Lead',
         Deals: 'CRM Deal',
+        Tickets: 'Ticket',
         Contacts: 'Contact',
         Organizations: 'CRM Organization',
         Notes: 'FCRM Note',

@@ -3,10 +3,10 @@
   quick-jump affordance, and a user chip. Replaces AppSidebar.vue's dynamic
   saved-views nav, which doesn't fit this design's fixed grouped layout.
 
-  Only "Leads" and "Clients" are live routes (this design pass's scope) —
-  every other nav item (Activity Feed, Tasks, Tickets, Dashboard, Marketing,
-  Reports) renders but does nothing yet, matching the plan's decision to keep
-  them present-but-inert rather than hide them.
+  "Leads", "Clients" and "Tickets" are live routes. Everything else (Activity
+  Feed, Tasks, Dashboard, Marketing, Reports) renders but does nothing yet,
+  matching the plan's decision to keep them present-but-inert rather than hide
+  them.
 -->
 <template>
   <aside class="tsi-sidebar">
@@ -86,6 +86,15 @@ const clientCount = createResource({
   auto: true,
   transform: (value) => value ?? 0,
 })
+// Every ticket, not just the open ones: this chip is a "how big is this
+// thing?" count like the two above it, and a filtered count here would be the
+// only number on the sidebar that means something different from its label.
+const ticketCount = createResource({
+  url: 'frappe.client.get_count',
+  params: { doctype: 'Ticket' },
+  auto: true,
+  transform: (value) => value ?? 0,
+})
 
 const navGroups = computed(() => [
   {
@@ -95,7 +104,7 @@ const navGroups = computed(() => [
       { label: 'Leads', count: leadCount.data ?? '…', route: 'Leads' },
       { label: 'Clients', count: clientCount.data ?? '…', route: 'Organizations' },
       { label: 'Tasks', count: '—' },
-      { label: 'Tickets', count: '—' },
+      { label: 'Tickets', count: ticketCount.data ?? '…', route: 'Tickets' },
     ],
   },
   {

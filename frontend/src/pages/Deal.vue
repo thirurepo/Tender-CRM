@@ -43,8 +43,17 @@
       :tabs="tabs"
       class="flex flex-1 overflow-hidden flex-col [&_[role='tab']]:px-0 [&_[role='tab']]:shrink-0 [&_[role='tablist']]:px-5 [&_[role='tablist']::-webkit-scrollbar]:h-0 [&_[role='tablist']]:min-h-[45px] [&_[role='tablist']]:gap-7.5 [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
     >
-      <template #tab-panel>
+      <template #tab-panel="{ tab }">
+        <LinkedTicketsList
+          v-if="tab.name === 'Tickets'"
+          :filters="{
+            reference_doctype: 'CRM Deal',
+            reference_name: props.dealId,
+          }"
+          :cacheKey="['CRM Deal', props.dealId]"
+        />
         <Activities
+          v-else
           ref="activities"
           v-model:reload="reload"
           v-model:tabIndex="tabIndex"
@@ -357,6 +366,8 @@ import SuccessIcon from '@/components/Icons/SuccessIcon.vue'
 import AttachmentIcon from '@/components/Icons/AttachmentIcon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import Activities from '@/components/Activities/Activities.vue'
+import LinkedTicketsList from '@/components/LinkedTicketsList.vue'
+import TicketsIcon from '@/components/Icons/TicketsIcon.vue'
 import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
 import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
 import AssignTo from '@/components/AssignTo.vue'
@@ -608,6 +619,13 @@ const tabs = computed(() => {
       icon: AttachmentIcon,
     },
     {
+      // Not an Activities tab — see the #tab-panel template, which renders
+      // LinkedTicketsList for this one and Activities for all the rest.
+      name: 'Tickets',
+      label: __('Tickets'),
+      icon: TicketsIcon,
+    },
+    {
       name: 'WhatsApp',
       label: __('WhatsApp'),
       icon: WhatsAppIcon,
@@ -780,10 +798,19 @@ function deleteDeal() {
 
 const activities = ref(null)
 
-function openEmailBox() {
+async function openEmailBox() {
   let currentTab = tabs.value[tabIndex.value]
   if (!['Emails', 'Comments', 'Activities'].includes(currentTab.name)) {
-    activities.value.changeTabTo('emails')
+    // The Tickets tab renders LinkedTicketsList rather than Activities, so
+    // this ref is null while it is open — there is no Activities instance to
+    // ask to change tab. Move off it by index instead and let Activities mount
+    // before reaching through the ref.
+    if (activities.value) {
+      activities.value.changeTabTo('emails')
+    } else {
+      tabIndex.value = tabs.value.findIndex((tab) => tab.name === 'Emails')
+      await nextTick()
+    }
   }
   nextTick(() => (activities.value.emailBox.show = true))
 }
