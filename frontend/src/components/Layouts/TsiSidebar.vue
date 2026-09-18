@@ -3,8 +3,8 @@
   quick-jump affordance, and a user chip. Replaces AppSidebar.vue's dynamic
   saved-views nav, which doesn't fit this design's fixed grouped layout.
 
-  "Leads", "Clients" and "Tickets" are live routes. Everything else (Activity
-  Feed, Tasks, Dashboard, Marketing, Reports) renders but does nothing yet,
+  "Leads", "Clients", "Tickets" and "Tasks" are live routes. Everything else
+  (Activity Feed, Dashboard, Marketing, Reports) renders but does nothing yet,
   matching the plan's decision to keep them present-but-inert rather than hide
   them.
 -->
@@ -95,6 +95,15 @@ const ticketCount = createResource({
   auto: true,
   transform: (value) => value ?? 0,
 })
+// CRM Task only, matching the sidebar's "how big is this thing?" convention
+// above — the Tasks page's own To Dos toggle (see pages/Tasks.vue) has no
+// single sidebar-sized count since ToDo's visibility is per-user, not global.
+const taskCount = createResource({
+  url: 'frappe.client.get_count',
+  params: { doctype: 'CRM Task' },
+  auto: true,
+  transform: (value) => value ?? 0,
+})
 
 const navGroups = computed(() => [
   {
@@ -103,7 +112,7 @@ const navGroups = computed(() => [
       { label: 'Activity Feed', count: '—' },
       { label: 'Leads', count: leadCount.data ?? '…', route: 'Leads' },
       { label: 'Clients', count: clientCount.data ?? '…', route: 'Organizations' },
-      { label: 'Tasks', count: '—' },
+      { label: 'Tasks', count: taskCount.data ?? '…', route: 'Tasks' },
       { label: 'Tickets', count: ticketCount.data ?? '…', route: 'Tickets' },
     ],
   },
