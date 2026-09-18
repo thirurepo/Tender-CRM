@@ -196,6 +196,12 @@ doc_events = {
             "tender_crm.crm_overrides.lead_import.stamp_converted_date",
         ],
     },
+    "CRM Deal": {
+        # "Convert to client" goes through crm's convert_to_deal, which never
+        # records the source lead on the organization. This does, so the Client
+        # page's timeline keeps the lead's history. See crm_overrides/client_link.py.
+        "after_insert": "tender_crm.crm_overrides.client_link.stamp_source_lead",
+    },
 }
 
 
@@ -222,7 +228,8 @@ doc_events = {
 # Read APIs
 # ---------
 # Also deliberately absent. tender_crm/api/ holds the app's whitelisted read
-# endpoints — quick jump (api/search.py) and the activity feed (api/feed.py).
+# endpoints — quick jump (api/search.py), the activity feed (api/feed.py) and
+# the Client page's timeline (api/client_activities.py).
 # A whitelisted method is registered by its decorator at import time, not by a
 # hook, and these change nothing about crm or erpnext: they only read.
 #
