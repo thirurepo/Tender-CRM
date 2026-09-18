@@ -13,6 +13,7 @@ const props = defineProps({
 })
 
 const activities = defineModel({ type: Object })
+const todos = defineModel('todos', { type: Object })
 
 const { showModal } = useDoctypeModal()
 const { updateOnboardingStep } = useOnboarding('frappecrm')
@@ -51,6 +52,17 @@ function updateTaskStatus(status, task) {
     value: status,
   }).then(() => {
     activities.value.reload()
+  })
+}
+
+function updateTodoStatus(status, todo) {
+  call('frappe.client.set_value', {
+    doctype: 'ToDo',
+    name: todo.name,
+    fieldname: 'status',
+    value: status,
+  }).then(() => {
+    todos.value.reload()
   })
 }
 
@@ -130,6 +142,7 @@ defineExpose({
   showTask,
   deleteTask,
   updateTaskStatus,
+  updateTodoStatus,
   showNote,
   createCallLog,
 })

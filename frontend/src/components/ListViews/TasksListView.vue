@@ -4,7 +4,7 @@
     :columns="columns"
     :rows="rows"
     :options="{
-      onRowClick: (row) => emit('showTask', row.name),
+      onRowClick: (row) => (doctype == 'CRM Task' ? emit('showTask', row.name) : null),
       selectable: options.selectable,
       showTooltip: options.showTooltip,
       resizeColumn: options.resizeColumn,
@@ -39,7 +39,7 @@
       v-slot="{ idx, column, item, row }"
       class="mx-3 sm:mx-5"
       :rows="rows"
-      doctype="CRM Task"
+      :doctype="doctype"
     >
       <div v-if="column.key === 'due_date' && item">
         <Tooltip :text="item && formatDate(item, 'ddd, MMM D, YYYY | hh:mm a')">
@@ -58,7 +58,20 @@
         class="overflow-hidden"
       >
         <template #prefix>
-          <div v-if="column.key === 'status'">
+          <div v-if="column.key === 'status' && doctype === 'ToDo'">
+            <Dropdown
+              :options="todoStatusOptions((status) => emit('updateTodoStatus', row.name, status))"
+            >
+              <Button
+                variant="ghost"
+                class="hover:bg-surface-gray-4"
+                @click.stop.prevent
+              >
+                <TaskStatusIcon :status="item" />
+              </Button>
+            </Dropdown>
+          </div>
+          <div v-else-if="column.key === 'status'">
             <TaskStatusIcon :status="item" />
           </div>
           <div v-else-if="column.key === 'priority'">
@@ -177,7 +190,7 @@
   <ListBulkActions
     ref="listBulkActionsRef"
     v-model="list"
-    doctype="CRM Task"
+    :doctype="doctype"
     :options="{
       hideAssign: true,
     }"
@@ -196,9 +209,11 @@ import {
   isTranslatable,
   formatDuration,
   sanitizeHTML,
+  todoStatusOptions,
 } from '@/utils'
 import {
   Avatar,
+  Button,
   ListView,
   ListHeader,
   ListHeaderItem,
@@ -214,6 +229,7 @@ import { ref, computed, watch } from 'vue'
 defineProps({
   rows: { type: Array, required: true },
   columns: { type: Array, required: true },
+  doctype: { type: String, default: 'CRM Task' },
   options: {
     type: Object,
     default: () => ({
@@ -235,6 +251,7 @@ const emit = defineEmits([
   'applyLikeFilter',
   'likeDoc',
   'selectionsChanged',
+  'updateTodoStatus',
 ])
 
 const pageLengthCount = defineModel({ type: Number })

@@ -2,6 +2,20 @@
   <LayoutHeader>
     <template #left-header>
       <ViewBreadcrumbs v-model="viewControls" routeName="Tasks" />
+      <div class="flex rounded bg-surface-gray-2 p-0.5">
+        <Button
+          variant="ghost"
+          :class="activeDoctype == 'CRM Task' ? 'bg-surface-white shadow-sm' : ''"
+          :label="__('Tasks')"
+          @click="setActiveDoctype('CRM Task')"
+        />
+        <Button
+          variant="ghost"
+          :class="activeDoctype == 'ToDo' ? 'bg-surface-white shadow-sm' : ''"
+          :label="__('To Dos')"
+          @click="setActiveDoctype('ToDo')"
+        />
+      </div>
     </template>
     <template #right-header>
       <CustomActions
@@ -9,6 +23,7 @@
         :actions="tasksListView.customListActions"
       />
       <Button
+        v-if="activeDoctype == 'CRM Task'"
         variant="solid"
         :label="__('Create')"
         iconLeft="plus"
@@ -17,14 +32,15 @@
     </template>
   </LayoutHeader>
   <ViewControls
+    :key="activeDoctype"
     ref="viewControls"
     v-model="tasks"
     v-model:loadMore="loadMore"
     v-model:resizeColumn="triggerResize"
     v-model:updatedPageCount="updatedPageCount"
-    doctype="CRM Task"
+    :doctype="activeDoctype"
     :options="{
-      allowedViews: ['list', 'kanban'],
+      allowedViews: activeDoctype == 'ToDo' ? ['list'] : ['list', 'kanban'],
     }"
   />
   <KanbanView
@@ -160,9 +176,11 @@
     ref="tasksListView"
     v-model="tasks.data.page_length_count"
     v-model:list="tasks"
+    :doctype="activeDoctype"
     :rows="rows"
     :columns="columns"
     :options="{
+      selectable: activeDoctype != 'ToDo',
       showTooltip: false,
       resizeColumn: true,
       rowCount: tasks.data.row_count,
@@ -172,6 +190,7 @@
     @columnWidthUpdated="() => triggerResize++"
     @updatePageCount="(count) => (updatedPageCount = count)"
     @showTask="showTask"
+    @updateTodoStatus="updateTodoStatus"
     @applyFilter="(data) => viewControls.applyFilter(data)"
     @applyLikeFilter="(data) => viewControls.applyLikeFilter(data)"
     @likeDoc="(data) => viewControls.likeDoc(data)"
@@ -213,7 +232,7 @@ import { usersStore } from '@/stores/users'
 import { formatDate } from '@/utils'
 import { timestampCell } from '@/composables/useTimelinePreferences'
 import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
-import { Tooltip, Avatar, Dropdown, TextEditor } from 'frappe-ui'
+import { Tooltip, Avatar, Dropdown, TextEditor, call } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -226,6 +245,21 @@ const { capture } = useTelemetry()
 const router = useRouter()
 
 const tasksListView = ref(null)
+
+// Which record type the page is showing. CRM Task keeps the page's existing
+// Create/Edit/Delete/Kanban behaviour; ToDo (surfaced here alongside it, see
+// tender_crm/crm_overrides/todo.py) is read-only save for a status change,
+// and has no Kanban view since it doesn't share CRM Task's
+// reference_doctype/reference_docname field names that Kanban's column/jump
+// logic depends on.
+const activeDoctype = ref('CRM Task')
+
+function setActiveDoctype(doctype) {
+  activeDoctype.value = doctype
+  if (doctype == 'ToDo' && router.currentRoute.value.params.viewType == 'kanban') {
+    router.push({ ...router.currentRoute.value, params: { viewType: 'list' } })
+  }
+}
 
 // tasks data is loaded in the ViewControls component
 const tasks = ref({})
@@ -388,6 +422,15 @@ function actions(name) {
       },
     },
   ]
+}
+
+function updateTodoStatus(name, status) {
+  call('frappe.client.set_value', {
+    doctype: 'ToDo',
+    name,
+    fieldname: 'status',
+    value: status,
+  }).then(() => tasks.value.reload())
 }
 
 function redirect(doctype, docname) {
