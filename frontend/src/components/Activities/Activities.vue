@@ -421,6 +421,7 @@
   <AllModals
     ref="modalRef"
     v-model="all_activities"
+    v-model:todos="todos"
     :doctype="doctype"
     :doc="doc"
   />
@@ -473,7 +474,7 @@ import WhatsappTemplateSelectorModal from '@/components/Modals/WhatsappTemplateS
 import AllModals from '@/components/Activities/AllModals.vue'
 import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
 import TimelineTimestamp from '@/components/Activities/TimelineTimestamp.vue'
-import { startCase } from '@/utils'
+import { startCase, htmlToText } from '@/utils'
 import { globalStore } from '@/stores/global'
 import { usersStore } from '@/stores/users'
 import { useTimelinePreferences } from '@/composables/useTimelinePreferences'
@@ -544,6 +545,31 @@ const all_activities = createResource({
     toast.error(error.messages?.[0] || __('Failed to load activities'))
   },
 })
+
+// Core ToDo records (created by tsi-crm's Assign-To feature) aren't part of
+// crm.api.activities.get_activities — that endpoint is vendor-owned and only
+// ever queries CRM Task. Fetched separately and merged into the Tasks tab in
+// the `activities` computed below (see tender_crm/crm_overrides/todo.py).
+const todos = createResource({
+  url: 'tender_crm.crm_overrides.todo.get_todos',
+  cache: ['todos', props.docname],
+  params: {
+    reference_doctype: props.doctype,
+    reference_name: props.docname,
+  },
+  auto: false,
+  onError: (error) => {
+    toast.error(error.messages?.[0] || __('Failed to load to-dos'))
+  },
+})
+
+watch(
+  title,
+  (tabTitle) => {
+    if (tabTitle === 'Tasks' && !todos.data) todos.fetch()
+  },
+  { immediate: true },
+)
 
 const showWhatsappTemplates = ref(false)
 
@@ -649,8 +675,20 @@ const activities = computed(() => {
     if (!all_activities.data?.calls) return []
     return sortByCreation(all_activities.data.calls, isNewestFirst.value)
   } else if (title.value == 'Tasks') {
-    if (!all_activities.data?.tasks) return []
-    return sortByModified(all_activities.data.tasks)
+    let tasks = sortByModified(all_activities.data?.tasks || []).map(
+      (task) => ({ ...task, entryType: 'CRM Task' }),
+    )
+    let todoEntries = (todos.data || []).map((todo) => ({
+      ...todo,
+      entryType: 'ToDo',
+      // TaskArea reads these CRM-Task-shaped field names; map ToDo's onto
+      // them once here so the component doesn't need to branch per field.
+      title: htmlToText(todo.description || '') || __('To Do'),
+      assigned_to: todo.allocated_to,
+      due_date: todo.date,
+      modified: todo.creation,
+    }))
+    return sortByModified([...tasks, ...todoEntries])
   } else if (title.value == 'Notes') {
     if (!all_activities.data?.notes) return []
     return sortByModified(all_activities.data.notes)

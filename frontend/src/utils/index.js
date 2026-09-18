@@ -247,6 +247,19 @@ export function taskStatusOptions(action, data) {
   })
 }
 
+// ToDo's status enum (Open/Closed/Cancelled) is fixed by core Frappe
+// (frappe/core/doctype/todo/todo.json) — unlike CRM Task's, it isn't read
+// off doctype meta here, since ToDo's metadata isn't loaded in tsi-crm today.
+export function todoStatusOptions(action, data) {
+  return ['Open', 'Closed', 'Cancelled'].map((status) => {
+    return {
+      icon: () => h(TaskStatusIcon, { status }),
+      label: status,
+      onClick: () => action && action(status, data),
+    }
+  })
+}
+
 export function taskPriorityOptions(action, data) {
   let options = ['Low', 'Medium', 'High']
   let priorityMeta = getMeta('CRM Task')
