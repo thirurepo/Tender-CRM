@@ -251,7 +251,11 @@ const emoji = ref('')
 
 const subject = ref(props.subject)
 const fromEmail = ref('')
-const toEmails = ref(modelValue.value.email ? [modelValue.value.email] : [])
+// Leads and Deals carry `email`; a client (CRM Organization) has no email of
+// its own, so fall back to its primary contact's (tsi_contact_email, from the
+// legacy client import).
+const defaultRecipient = modelValue.value.email || modelValue.value.tsi_contact_email
+const toEmails = ref(defaultRecipient ? [defaultRecipient] : [])
 const ccEmails = ref([])
 const bccEmails = ref([])
 const ccInput = ref(null)

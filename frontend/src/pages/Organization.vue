@@ -1,3 +1,12 @@
+<!--
+  Client (CRM Organization) page, laid out like the Lead page: the same
+  Activity / Emails / Comments / Data / Calls / Tasks / Notes / Attachments
+  tabs, plus the client-only Deals, Contacts and Tickets. Details live in the
+  right-hand side panel, as on a lead. The timeline comes from
+  tender_crm.api.client_activities, which merges in the history of the lead
+  the client was converted from — so nothing logged on a lead is lost when it
+  becomes a client.
+-->
 <template>
   <LayoutHeader v-if="organization.doc">
     <template #left-header>
@@ -12,97 +21,176 @@
         v-if="organization._actions?.length"
         :actions="organization._actions"
       />
+      <AssignTo
+        v-model="assignees.data"
+        doctype="CRM Organization"
+        :docname="organizationId"
+      />
     </template>
   </LayoutHeader>
-  <div v-if="organization.doc" ref="parentRef" class="flex h-full">
-    <Resizer
-      v-if="organization.doc"
-      :parent="$refs.parentRef"
-      class="flex h-full flex-col overflow-hidden border-r"
+  <div v-if="organization.doc" class="flex h-full overflow-hidden">
+    <Tabs
+      v-model="tabIndex"
+      as="div"
+      :tabs="tabs"
+      class="flex flex-1 overflow-hidden flex-col [&_[role='tablist']]:gap-7.5 [&_[role='tablist']]:px-5 [&_[role='tablist']::-webkit-scrollbar]:h-0 [&_[role='tablist']]:min-h-[45px] [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
     >
-      <div class="border-b">
-        <FileUploader
-          :validateFile="validateIsImageFile"
-          @success="changeOrganizationImage"
+      <template #tab-item="{ tab, selected }">
+        <button
+          class="group flex shrink-0 items-center gap-2 border-b border-transparent py-2.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9"
+          :class="{ 'text-ink-gray-9': selected }"
         >
-          <template #default="{ openFileSelector, error }">
-            <div class="flex flex-col items-start justify-start gap-4 p-5">
-              <div class="flex gap-4 items-center">
-                <div class="group relative h-15.5 w-15.5">
-                  <Avatar
-                    size="3xl"
-                    class="h-15.5 w-15.5"
-                    :label="organization.doc.organization_name"
-                    :image="organization.doc.organization_logo"
-                  />
-                  <component
-                    :is="organization.doc.organization_logo ? Dropdown : 'div'"
-                    v-bind="
-                      organization.doc.organization_logo
-                        ? {
-                            options: [
-                              {
-                                icon: 'upload',
-                                label: organization.doc.organization_logo
-                                  ? __('Change Image')
-                                  : __('Upload Image'),
-                                onClick: openFileSelector,
-                              },
-                              {
-                                icon: 'trash-2',
-                                label: __('Remove Image'),
-                                onClick: () => changeOrganizationImage(''),
-                              },
-                            ],
-                          }
-                        : { onClick: openFileSelector }
-                    "
-                    class="!absolute bottom-0 left-0 right-0"
-                  >
-                    <div
-                      class="z-1 absolute bottom-0 left-0 right-0 flex h-14 cursor-pointer items-center justify-center rounded-b-full bg-black bg-opacity-40 pt-5 opacity-0 duration-300 ease-in-out group-hover:opacity-100"
-                      style="
-                        -webkit-clip-path: inset(22px 0 0 0);
-                        clip-path: inset(22px 0 0 0);
-                      "
-                    >
-                      <CameraIcon class="h-6 w-6 cursor-pointer text-white" />
-                    </div>
-                  </component>
+          <component :is="tab.icon" v-if="tab.icon" class="h-5" />
+          {{ tab.label }}
+          <Badge
+            v-if="tab.count !== undefined"
+            class="group-hover:bg-surface-gray-10"
+            :class="[selected ? 'bg-surface-gray-10' : 'bg-gray-600']"
+            variant="solid"
+            theme="gray"
+            size="sm"
+          >
+            {{ tab.count }}
+          </Badge>
+        </button>
+      </template>
+      <template #tab-panel="{ tab }">
+        <template v-if="tab.name === 'Deals' || tab.name === 'Contacts'">
+          <DealsListView
+            v-if="tab.name === 'Deals' && rows.length"
+            class="mt-4"
+            :rows="rows"
+            :columns="columns"
+            :options="{ selectable: false, showTooltip: false }"
+          />
+          <ContactsListView
+            v-else-if="tab.name === 'Contacts' && rows.length"
+            class="mt-4"
+            :rows="rows"
+            :columns="columns"
+            :options="{ selectable: false, showTooltip: false }"
+          />
+          <EmptyState v-else :icon="tab.icon" :name="tab.label" />
+        </template>
+        <LinkedTicketsList
+          v-else-if="tab.name === 'Tickets'"
+          :filters="{ organization: props.organizationId }"
+          :cacheKey="props.organizationId"
+        />
+        <Activities
+          v-else
+          ref="activities"
+          v-model:reload="reload"
+          v-model:tabIndex="tabIndex"
+          doctype="CRM Organization"
+          :docname="organizationId"
+          :tabs="tabs"
+          @beforeSave="beforeFieldChange"
+        />
+      </template>
+    </Tabs>
+    <Resizer class="flex flex-col justify-between border-l" side="right">
+      <div
+        class="flex h-[45px] cursor-copy items-center border-b px-5 py-2.5 text-lg-medium text-ink-gray-9"
+        @click="copyToClipboard(organizationId)"
+      >
+        {{ organizationId }}
+      </div>
+      <FileUploader
+        :validateFile="validateIsImageFile"
+        @success="changeOrganizationImage"
+      >
+        <template #default="{ openFileSelector, error }">
+          <div class="flex items-center justify-start gap-5 border-b p-5">
+            <div class="group relative size-12">
+              <Avatar
+                size="3xl"
+                class="size-12"
+                :label="organization.doc.organization_name"
+                :image="organization.doc.organization_logo"
+              />
+              <component
+                :is="organization.doc.organization_logo ? Dropdown : 'div'"
+                v-bind="
+                  organization.doc.organization_logo
+                    ? {
+                        options: [
+                          {
+                            icon: 'upload',
+                            label: __('Change Image'),
+                            onClick: openFileSelector,
+                          },
+                          {
+                            icon: 'trash-2',
+                            label: __('Remove Image'),
+                            onClick: () => changeOrganizationImage(''),
+                          },
+                        ],
+                      }
+                    : { onClick: openFileSelector }
+                "
+                class="!absolute bottom-0 left-0 right-0"
+              >
+                <div
+                  class="z-1 absolute bottom-0.5 left-0 right-0.5 flex h-9 cursor-pointer items-center justify-center rounded-b-full bg-black bg-opacity-40 pt-3 opacity-0 duration-300 ease-in-out group-hover:opacity-100"
+                  style="
+                    -webkit-clip-path: inset(12px 0 0 0);
+                    clip-path: inset(12px 0 0 0);
+                  "
+                >
+                  <CameraIcon class="size-4 cursor-pointer text-white" />
                 </div>
-                <div class="flex flex-col gap-2 truncate">
-                  <div class="truncate text-3xl-medium text-ink-gray-9">
-                    <span>{{ organization.doc.name }}</span>
-                  </div>
-                  <div
-                    v-if="organization.doc.website"
-                    class="flex items-center gap-1.5 text-base text-ink-gray-8"
-                  >
-                    <WebsiteIcon class="size-4" />
-                    <span>{{ website(organization.doc.website) }}</span>
-                  </div>
-                  <ErrorMessage :message="__(error)" />
+              </component>
+            </div>
+            <div class="flex flex-col gap-2.5 truncate">
+              <Tooltip :text="title">
+                <div class="truncate text-3xl-medium text-ink-gray-9">
+                  {{ title }}
                 </div>
-              </div>
+              </Tooltip>
               <div class="flex gap-1.5">
                 <Button
-                  v-if="canDelete"
-                  :label="__('Delete')"
-                  theme="red"
-                  size="sm"
-                  iconLeft="trash-2"
-                  @click="deleteOrganization()"
+                  v-if="callEnabled"
+                  :tooltip="__('Make a Call')"
+                  :icon="PhoneIcon"
+                  @click="
+                    () =>
+                      contactMobile
+                        ? makeCall(contactMobile)
+                        : toast.error(
+                            __('Please set a mobile number to make calls'),
+                          )
+                  "
                 />
                 <Button
-                  :tooltip="__('Open Website')"
-                  icon="lucide-link"
+                  :tooltip="__('Send an Email')"
+                  :icon="Email2Icon"
+                  @click="openEmailBox"
+                />
+                <Button
+                  :tooltip="__('Go to Website')"
+                  :icon="LinkIcon"
                   @click="openWebsite"
                 />
+                <Button
+                  :tooltip="__('Attach a File')"
+                  :icon="AttachmentIcon"
+                  @click="showFilesUploader = true"
+                />
+                <Button
+                  v-if="canDelete"
+                  :tooltip="__('Delete')"
+                  variant="subtle"
+                  theme="red"
+                  icon="lucide-trash-2"
+                  @click="deleteOrganization"
+                />
               </div>
+              <ErrorMessage :message="__(error)" />
             </div>
-          </template>
-        </FileUploader>
-      </div>
+          </div>
+        </template>
+      </FileUploader>
       <div
         v-if="sections.data"
         class="flex flex-1 flex-col justify-between overflow-hidden"
@@ -116,62 +204,23 @@
         />
       </div>
     </Resizer>
-    <Tabs
-      v-model="tabIndex"
-      as="div"
-      :tabs="tabs"
-      class="flex flex-1 overflow-hidden flex-col [&_[role='tablist']]:gap-7.5 [&_[role='tablist']]:px-5 [&_[role='tablist']::-webkit-scrollbar]:h-0 [&_[role='tablist']]:min-h-[45px] [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
-    >
-      <template #tab-item="{ tab, selected }">
-        <button
-          class="group flex items-center gap-2 border-b border-transparent py-2.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9"
-          :class="{ 'text-ink-gray-9': selected }"
-        >
-          <component :is="tab.icon" v-if="tab.icon" class="h-5" />
-          {{ __(tab.label) }}
-          <Badge
-            class="group-hover:bg-surface-gray-10"
-            :class="[selected ? 'bg-surface-gray-10' : 'bg-gray-600']"
-            variant="solid"
-            theme="gray"
-            size="sm"
-          >
-            {{ tab.count }}
-          </Badge>
-        </button>
-      </template>
-      <template #tab-panel="{ tab }">
-        <DealsListView
-          v-if="tab.label === 'Deals' && rows.length"
-          class="mt-4"
-          :rows="rows"
-          :columns="columns"
-          :options="{ selectable: false, showTooltip: false }"
-        />
-        <ContactsListView
-          v-if="tab.label === 'Contacts' && rows.length"
-          class="mt-4"
-          :rows="rows"
-          :columns="columns"
-          :options="{ selectable: false, showTooltip: false }"
-        />
-        <LinkedTicketsList
-          v-if="tab.label === 'Tickets'"
-          :filters="{ organization: props.organizationId }"
-          :cacheKey="props.organizationId"
-        />
-        <EmptyState
-          v-if="tab.label !== 'Tickets' && !rows.length"
-          :icon="tab.icon"
-          :name="__(tab.label)"
-        />
-      </template>
-    </Tabs>
   </div>
   <ErrorPage
     v-else-if="errorTitle"
     :errorTitle="errorTitle"
     :errorMessage="errorMessage"
+  />
+  <FilesUploader
+    v-if="organization.doc"
+    v-model="showFilesUploader"
+    doctype="CRM Organization"
+    :docname="organizationId"
+    @after="
+      () => {
+        activities?.all_activities?.reload()
+        changeTabTo('attachments')
+      }
+    "
   />
   <DeleteLinkedDocModal
     v-if="showDeleteLinkedDocModal"
@@ -191,8 +240,20 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import DealsListView from '@/components/ListViews/DealsListView.vue'
 import ContactsListView from '@/components/ListViews/ContactsListView.vue'
 import LinkedTicketsList from '@/components/LinkedTicketsList.vue'
+import Activities from '@/components/Activities/Activities.vue'
+import AssignTo from '@/components/AssignTo.vue'
+import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
 import TicketsIcon from '@/components/Icons/TicketsIcon.vue'
-import WebsiteIcon from '@/components/Icons/WebsiteIcon.vue'
+import ActivityIcon from '@/components/Icons/ActivityIcon.vue'
+import EmailIcon from '@/components/Icons/EmailIcon.vue'
+import Email2Icon from '@/components/Icons/Email2Icon.vue'
+import CommentIcon from '@/components/Icons/CommentIcon.vue'
+import DetailsIcon from '@/components/Icons/DetailsIcon.vue'
+import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
+import TaskIcon from '@/components/Icons/TaskIcon.vue'
+import NoteIcon from '@/components/Icons/NoteIcon.vue'
+import LinkIcon from '@/components/Icons/LinkIcon.vue'
+import AttachmentIcon from '@/components/Icons/AttachmentIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
@@ -208,14 +269,18 @@ import { getView } from '@/utils/view'
 import {
   validateIsImageFile,
   setupCustomizations,
+  copyToClipboard,
   openWebsite as openExternalWebsite,
 } from '@/utils'
+import { callEnabled } from '@/composables/telephony'
+import { useActiveTabManager } from '@/composables/useActiveTabManager'
 import { timestampCell } from '@/composables/useTimelinePreferences'
 import {
   Breadcrumbs,
   Avatar,
   FileUploader,
   Dropdown,
+  Tooltip,
   Tabs,
   createListResource,
   usePageMeta,
@@ -225,7 +290,7 @@ import {
 } from 'frappe-ui'
 import { useDoctypeModal } from '@/composables/doctypeModal'
 import { useTelemetry } from 'frappe-ui/frappe'
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -233,7 +298,7 @@ const props = defineProps({
 })
 
 const { brand } = getSettings()
-const { $dialog, $socket } = globalStore()
+const { $dialog, $socket, makeCall } = globalStore()
 const { getUser } = usersStore()
 const { getDealStatus } = statusesStore()
 const { doctypeMeta } = getMeta('CRM Organization')
@@ -246,13 +311,31 @@ const errorTitle = ref('')
 const errorMessage = ref('')
 
 const showDeleteLinkedDocModal = ref(false)
+const showFilesUploader = ref(false)
+const reload = ref(false)
+const activities = ref(null)
 
 const {
   document: organization,
+  assignees,
   permissions,
   scripts,
+  error,
   triggerOnRender,
 } = useDocument('CRM Organization', props.organizationId)
+
+watch(error, (err) => {
+  if (err) {
+    errorTitle.value =
+      err.exc_type == 'DoesNotExistError'
+        ? __('Document not found')
+        : __('Error occurred')
+    errorMessage.value = __(err.messages?.[0] || __('An error occurred'))
+  } else {
+    errorTitle.value = ''
+    errorMessage.value = ''
+  }
+})
 
 const canDelete = computed(() => permissions.data?.permissions?.delete || false)
 
@@ -332,10 +415,6 @@ function beforeFieldChange(data) {
   }
 }
 
-function website(url) {
-  return url && url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '')
-}
-
 function openWebsite() {
   if (!organization.doc.website) {
     toast.error(__('No Website Found'))
@@ -343,6 +422,27 @@ function openWebsite() {
   }
 
   openExternalWebsite(organization.doc.website)
+}
+
+// A client has no phone or email of its own; the legacy client import put its
+// primary contact's on the record (tsi_contact_*), and that is who a call or
+// email from this page is for.
+const contactMobile = computed(
+  () =>
+    organization.doc?.tsi_contact_mobile || organization.doc?.tsi_contact_phone,
+)
+
+async function openEmailBox() {
+  // Deals / Contacts / Tickets render no Activities, so the ref is null there:
+  // move to Emails by index and let Activities mount before reaching through.
+  let current = tabs.value[tabIndex.value]?.name
+  if (!['Emails', 'Comments', 'Activity'].includes(current)) {
+    tabIndex.value = tabs.value.findIndex((tab) => tab.name === 'Emails')
+    await nextTick()
+  }
+  nextTick(() => {
+    if (activities.value?.emailBox) activities.value.emailBox.show = true
+  })
 }
 
 const sections = createResource({
@@ -375,25 +475,6 @@ function getParsedSections(_sections) {
     return section
   })
 }
-
-const tabIndex = ref(0)
-const tabs = [
-  {
-    label: 'Deals',
-    icon: DealsIcon,
-    count: computed(() => deals.data?.length),
-  },
-  {
-    label: 'Contacts',
-    icon: ContactsIcon,
-    count: computed(() => contacts.data?.length),
-  },
-  {
-    label: 'Tickets',
-    icon: TicketsIcon,
-    count: computed(() => ticketCount.data ?? 0),
-  },
-]
 
 // Only the badge. The rows are LinkedTicketsList's own business, and it does
 // not fetch them until the tab is opened — the badge has to be right before
@@ -453,20 +534,59 @@ const contacts = createListResource({
   auto: true,
 })
 
+// Same tabs, in the same order, as the Lead page, so a converted lead reads the
+// same as a client; then the three views only a client has. `count` is what
+// marks a tab as a list with a badge rather than an Activities tab.
+const tabs = computed(() => [
+  { name: 'Activity', label: __('Activity'), icon: ActivityIcon },
+  { name: 'Emails', label: __('Emails'), icon: EmailIcon },
+  { name: 'Comments', label: __('Comments'), icon: CommentIcon },
+  { name: 'Data', label: __('Data'), icon: DetailsIcon },
+  { name: 'Calls', label: __('Calls'), icon: PhoneIcon },
+  { name: 'Tasks', label: __('Tasks'), icon: TaskIcon },
+  { name: 'Notes', label: __('Notes'), icon: NoteIcon },
+  { name: 'Attachments', label: __('Attachments'), icon: AttachmentIcon },
+  {
+    name: 'Deals',
+    label: __('Deals'),
+    icon: DealsIcon,
+    count: deals.data?.length ?? 0,
+  },
+  {
+    name: 'Contacts',
+    label: __('Contacts'),
+    icon: ContactsIcon,
+    count: contacts.data?.length ?? 0,
+  },
+  {
+    name: 'Tickets',
+    label: __('Tickets'),
+    icon: TicketsIcon,
+    count: ticketCount.data ?? 0,
+  },
+])
+
+const { tabIndex, changeTabTo } = useActiveTabManager(
+  tabs,
+  'lastOrganizationTab',
+)
+
+const currentTabName = computed(() => tabs.value[tabIndex.value]?.name)
+
 const rows = computed(() => {
-  let list = !tabIndex.value ? deals : contacts
-
-  if (!list.data) return []
-
-  return list.data.map((row) => {
-    return !tabIndex.value ? getDealRowObject(row) : getContactRowObject(row)
-  })
+  if (currentTabName.value === 'Deals') {
+    return (deals.data || []).map(getDealRowObject)
+  }
+  if (currentTabName.value === 'Contacts') {
+    return (contacts.data || []).map(getContactRowObject)
+  }
+  return []
 })
 
 const { getFormattedCurrency } = getMeta('CRM Deal')
 
 const columns = computed(() => {
-  return tabIndex.value === 0 ? dealColumns : contactColumns
+  return currentTabName.value === 'Deals' ? dealColumns : contactColumns
 })
 
 function getDealRowObject(deal) {

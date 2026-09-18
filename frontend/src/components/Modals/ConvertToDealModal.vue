@@ -185,7 +185,24 @@ async function convertToDeal() {
       localStorage.setItem('firstDeal' + user, _deal)
     })
     capture('convert_lead_to_deal')
-    router.push({ name: 'Deal', params: { dealId: _deal } })
+    // "Convert to client": land on the client (the deal's organization), where
+    // the lead's history now lives — see tender_crm/api/client_activities.py.
+    // A deal without an organization falls back to the deal page.
+    let organization = await call('frappe.client.get_value', {
+      doctype: 'CRM Deal',
+      filters: { name: _deal },
+      fieldname: 'organization',
+    })
+      .then((d) => d?.organization)
+      .catch(() => null)
+    if (organization) {
+      router.push({
+        name: 'Organization',
+        params: { organizationId: organization },
+      })
+    } else {
+      router.push({ name: 'Deal', params: { dealId: _deal } })
+    }
   }
 }
 

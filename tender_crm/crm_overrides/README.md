@@ -9,6 +9,7 @@ Everything Tender CRM changes about the behaviour of Frappe CRM and ERPNext.
 | --- | --- |
 | `erpnext_link.py` | Keeps a CRM Deal and the ERPNext Quotation / Sales Order raised from it pointing at each other, and moves the deal along the pipeline as those documents are submitted. |
 | `lead_import.py` | Keeps `tsi_converted_date` / `tsi_last_status_change` on CRM Lead accurate for leads worked normally, after the legacy CRM import (see `tender_crm/Import_crm_data/import_leads.py`) sets both directly from historical CSV data. |
+| `client_link.py` | Stamps `CRM Organization.tsi_converted_from_lead` when "Convert to client" creates a deal from a lead, so the client's timeline (`api/client_activities.py`) keeps the lead's history. First conversion wins. |
 | `todo.py` | A whitelisted `get_todos` endpoint the tsi-crm Tasks tab calls alongside `crm.api.activities.get_activities`, so core `ToDo` records (created by tsi-crm's existing Assign-To feature) show up next to `CRM Task`. Additive only — does not override the vendor endpoint. |
 
 ## The gap this closes

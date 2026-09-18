@@ -532,8 +532,16 @@ const changeTabTo = (tabName) => {
   tabIndex.value = index
 }
 
+// crm's get_activities only resolves Leads and Deals. A client (CRM
+// Organization) gets tender_crm's endpoint instead, which returns the same
+// shape with the source lead's and deals' history merged in — see
+// tender_crm/api/client_activities.py.
+const ACTIVITIES_URL = {
+  'CRM Organization': 'tender_crm.api.client_activities.get_client_activities',
+}
+
 const all_activities = createResource({
-  url: 'crm.api.activities.get_activities',
+  url: ACTIVITIES_URL[props.doctype] || 'crm.api.activities.get_activities',
   params: { name: props.docname },
   cache: ['activity', props.docname],
   auto: true,
