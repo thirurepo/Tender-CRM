@@ -36,6 +36,14 @@ const routes = [
     name: 'Dashboard',
     component: () => import('@/pages/Dashboard.vue'),
   },
+  // Deliberately absent from both route lists in the beforeEach guard below:
+  // those are for saved-list-view routes that need a viewType filled in, and
+  // the feed is not a list view. An unlisted route passes straight through.
+  {
+    path: '/activity',
+    name: 'Activity Feed',
+    component: () => import('@/pages/ActivityFeed.vue'),
+  },
   {
     alias: '/leads',
     path: '/leads/view/:viewType?',

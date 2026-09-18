@@ -3,23 +3,28 @@
   quick-jump affordance, and a user chip. Replaces AppSidebar.vue's dynamic
   saved-views nav, which doesn't fit this design's fixed grouped layout.
 
-  "Leads", "Clients", "Tickets" and "Tasks" are live routes. Everything else
-  (Activity Feed, Dashboard, Marketing, Reports) renders but does nothing yet,
+  "Activity Feed", "Leads", "Clients", "Tickets" and "Tasks" are live routes.
+  The rest (Dashboard, Marketing, Reports) renders but does nothing yet,
   matching the plan's decision to keep them present-but-inert rather than hide
   them.
 -->
 <template>
   <aside class="tsi-sidebar">
     <div class="tsi-sidebar__brand">
-      <span class="tsi-sidebar__brand-name">Tender</span>
+      <span class="tsi-sidebar__brand-name">CRM - Tender</span>
       <span class="tsi-sidebar__brand-rule" />
-      <span class="tsi-sidebar__brand-sub">CRM · Frappe</span>
     </div>
 
-    <button class="tsi-sidebar__quickjump" type="button" @click="() => {}">
-      <span>Quick jump</span>
+    <button
+      class="tsi-sidebar__quickjump"
+      type="button"
+      @click="quickJumpOpen = true"
+    >
+      <span>{{ __('Quick jump') }}</span>
       <span>/</span>
     </button>
+
+    <QuickJump v-model="quickJumpOpen" />
 
     <nav class="tsi-sidebar__nav">
       <div v-for="group in navGroups" :key="group.label" class="tsi-sidebar__group">
@@ -51,10 +56,15 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { createResource } from 'frappe-ui'
+import QuickJump from '@/components/QuickJump.vue'
 import { sessionStore } from '@/stores/session'
 import { usersStore } from '@/stores/users'
+
+// Owned here rather than inside QuickJump because two things open the dialog:
+// this button, and the global "/" shortcut QuickJump binds for itself.
+const quickJumpOpen = ref(false)
 
 const session = sessionStore()
 const { getUser } = usersStore()
@@ -105,11 +115,25 @@ const taskCount = createResource({
   transform: (value) => value ?? 0,
 })
 
+// Unlike the four counts above — which answer "how big is this thing?" — this
+// one answers "is anything happening?", so it is a 24-hour window rather than a
+// total. A lifetime activity count would be a number nobody can act on.
+const recentActivityCount = createResource({
+  url: 'tender_crm.api.feed.get_recent_count',
+  params: { hours: 24 },
+  auto: true,
+  transform: (value) => value ?? 0,
+})
+
 const navGroups = computed(() => [
   {
     label: 'CRM',
     items: [
-      { label: 'Activity Feed', count: '—' },
+      {
+        label: 'Activity Feed',
+        count: recentActivityCount.data ?? '…',
+        route: 'Activity Feed',
+      },
       { label: 'Leads', count: leadCount.data ?? '…', route: 'Leads' },
       { label: 'Clients', count: clientCount.data ?? '…', route: 'Organizations' },
       { label: 'Tasks', count: taskCount.data ?? '…', route: 'Tasks' },
@@ -168,14 +192,6 @@ const navGroups = computed(() => [
   border-bottom: 1px solid var(--tsi-color-text);
   padding-top: 1px;
 }
-.tsi-sidebar__brand-sub {
-  display: block;
-  font-size: 11px;
-  text-transform: uppercase;
-  color: var(--tsi-color-neutral-600);
-  margin-top: var(--tsi-space-1);
-}
-
 .tsi-sidebar__quickjump {
   margin: 0 var(--tsi-space-3) var(--tsi-space-3);
   padding: var(--tsi-space-1) var(--tsi-space-2);

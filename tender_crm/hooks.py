@@ -219,6 +219,17 @@ doc_events = {
 #     receiver acts on. See setup.configure_ticket_email_intake.
 
 
+# Read APIs
+# ---------
+# Also deliberately absent. tender_crm/api/ holds the app's whitelisted read
+# endpoints — quick jump (api/search.py) and the activity feed (api/feed.py).
+# A whitelisted method is registered by its decorator at import time, not by a
+# hook, and these change nothing about crm or erpnext: they only read.
+#
+# The feed's field-change source is off until a tabVersion index ships; that
+# goes in setup.py and a patch, not here. See api/README.md.
+
+
 # Installation
 # ------------
 # Seeds the pipeline on a fresh install. The same work is done idempotently by
