@@ -313,7 +313,7 @@ const tabs = [
 ]
 
 const deals = createResource({
-  url: 'crm.api.contact.get_linked_deals',
+  url: 'tender_crm.api.linked_deals.get_linked_deals',
   cache: ['deals', props.contactId],
   params: { contact: props.contactId },
   auto: true,

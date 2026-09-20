@@ -370,6 +370,7 @@ const deals = createListResource({
   ],
   filters: {
     organization: props.organizationId,
+    tsi_disabled: 0,
   },
   orderBy: 'modified desc',
   pageLength: 20,
