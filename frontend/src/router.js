@@ -84,6 +84,18 @@ const routes = [
     props: true,
   },
   {
+    alias: '/project-accounts',
+    path: '/project-accounts/view/:viewType?',
+    name: 'Project Accounts',
+    component: () => import('@/pages/ProjectAccounts.vue'),
+  },
+  {
+    path: '/project-accounts/:projectAccountId',
+    name: 'Project Account',
+    component: () => import('@/pages/ProjectAccount.vue'),
+    props: true,
+  },
+  {
     alias: '/notes',
     path: '/notes/view/:viewType?',
     name: 'Notes',
@@ -253,10 +265,11 @@ router.beforeEach(async (to, from, next) => {
     window.location.href = '/login?redirect-to=/tsi-crm'
   } else if (to.matched.length === 0) {
     next({ name: 'Invalid Page' })
-  } else if (['Lead', 'Ticket'].includes(to.name) && !to.hash) {
+  } else if (['Lead', 'Ticket', 'Project Account'].includes(to.name) && !to.hash) {
     const tabStorageKeys = {
       Lead: 'lastLeadTab',
       Ticket: 'lastTicketTab',
+      'Project Account': 'lastProjectAccountTab',
     }
     const activeTab = localStorage.getItem(tabStorageKeys[to.name]) || 'activity'
     const hash = '#' + activeTab
@@ -265,6 +278,7 @@ router.beforeEach(async (to, from, next) => {
     [
       'Leads',
       'Tickets',
+      'Project Accounts',
       'Contacts',
       'Organizations',
       'Notes',
@@ -285,6 +299,7 @@ router.beforeEach(async (to, from, next) => {
       const doctypeMap = {
         Leads: 'CRM Lead',
         Tickets: 'Ticket',
+        'Project Accounts': 'Project Account',
         Contacts: 'Contact',
         Organizations: 'CRM Organization',
         Notes: 'FCRM Note',

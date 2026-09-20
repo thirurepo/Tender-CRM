@@ -516,6 +516,26 @@ TICKET_SIDE_PANEL_LAYOUTS = [
 ]
 
 
+PROJECT_ACCOUNT_SIDE_PANEL_LAYOUTS = [
+    {
+        "dt": "Project Account",
+        "type": "Side Panel",
+        # Everything on the doctype: it is small enough that the side panel is
+        # the whole record, with the tabs on the left carrying the history.
+        "fields": [
+            "organization",
+            "account",
+            "project",
+            "account_type",
+            "status",
+            "hours",
+            "start_date",
+            "closed_date",
+        ],
+    },
+]
+
+
 def ensure_side_panel_layouts():
     """Give CRM Lead / CRM Organization a default Side Panel layout."""
     _install_side_panel_layouts(SIDE_PANEL_LAYOUTS)
@@ -530,6 +550,16 @@ def ensure_ticket_side_panel_layouts():
     doctypes is not dragged through it.
     """
     _install_side_panel_layouts(TICKET_SIDE_PANEL_LAYOUTS)
+
+
+def ensure_project_account_side_panel_layouts():
+    """Give Project Account a default Side Panel layout.
+
+    Load-bearing, not cosmetic — see _install_side_panel_layouts. Its own entry
+    point so it can be its own patch, and so a site that has not migrated the
+    doctype yet is skipped rather than failed (the installer checks it exists).
+    """
+    _install_side_panel_layouts(PROJECT_ACCOUNT_SIDE_PANEL_LAYOUTS)
 
 
 def _install_side_panel_layouts(specs):

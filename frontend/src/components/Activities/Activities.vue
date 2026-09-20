@@ -535,9 +535,12 @@ const changeTabTo = (tabName) => {
 // crm's get_activities only resolves Leads and Deals. A client (CRM
 // Organization) gets tender_crm's endpoint instead, which returns the same
 // shape with the source lead's and deals' history merged in — see
-// tender_crm/api/client_activities.py.
+// tender_crm/api/client_activities.py. A Project Account gets its own too — see
+// tender_crm/api/project_account_activities.py.
 const ACTIVITIES_URL = {
   'CRM Organization': 'tender_crm.api.client_activities.get_client_activities',
+  'Project Account':
+    'tender_crm.api.project_account_activities.get_project_account_activities',
 }
 
 const all_activities = createResource({

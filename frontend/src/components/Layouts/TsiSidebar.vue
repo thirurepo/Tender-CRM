@@ -4,8 +4,8 @@
   AppSidebar.vue's dynamic saved-views nav, which doesn't fit this design's
   fixed grouped layout.
 
-  "Activity Feed", "Leads", "Clients", "Contacts", "Notes", "Call Logs",
-  "Tasks" and "Tickets" are live routes, as is Dashboard's "Main". There is
+  "Activity Feed", "Leads", "Clients", "Project Accounts", "Contacts", "Notes",
+  "Call Logs", "Tasks" and "Tickets" are live routes, as is Dashboard's "Main". There is
   deliberately no "Deals" entry: the team works leads and clients, and deals are
   reached from those pages. The Deals route itself is untouched. This
   sidebar replaced stock AppSidebar on desktop, so it also has to carry what
@@ -231,6 +231,7 @@ import LeadsIcon from '@/components/Icons/LeadsIcon.vue'
 import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
 import TaskIcon from '@/components/Icons/TaskIcon.vue'
 import TicketsIcon from '@/components/Icons/TicketsIcon.vue'
+import ProjectAccountsIcon from '@/components/Icons/ProjectAccountsIcon.vue'
 import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
 import NoteIcon from '@/components/Icons/NoteIcon.vue'
 import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
@@ -349,6 +350,14 @@ const clientCount = createResource({
   auto: true,
   transform: (value) => value ?? 0,
 })
+// Every project account, open or closed: same "how big is this thing?" count as
+// the Leads and Clients chips above it.
+const projectAccountCount = createResource({
+  url: 'frappe.client.get_count',
+  params: { doctype: 'Project Account' },
+  auto: true,
+  transform: (value) => value ?? 0,
+})
 // Every ticket, not just the open ones: this chip is a "how big is this
 // thing?" count like the two above it, and a filtered count here would be the
 // only number on the sidebar that means something different from its label.
@@ -415,6 +424,12 @@ const navGroups = computed(() => [
         icon: OrganizationsIcon,
         count: clientCount.data ?? '…',
         route: 'Organizations',
+      },
+      {
+        label: 'Project Accounts',
+        icon: ProjectAccountsIcon,
+        count: projectAccountCount.data ?? '…',
+        route: 'Project Accounts',
       },
       {
         label: 'Contacts',

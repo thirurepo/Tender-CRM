@@ -52,3 +52,9 @@ tender_crm.patches.add_territory_geo_fields
 tender_crm.patches.add_territory_geo_form_scripts
 tender_crm.patches.seed_territory_countries
 tender_crm.patches.add_organization_geo_side_panel
+
+# Project Accounts. Masters first, so the doctype's default status has something
+# to point at; the side panel layout last (it needs the doctype synced, which
+# bench does before any patch in this file runs).
+tender_crm.patches.seed_project_account_masters
+tender_crm.patches.add_project_account_side_panel_layouts

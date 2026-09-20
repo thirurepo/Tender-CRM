@@ -25,6 +25,8 @@ from tender_crm.pipeline import (
     DEAL_STATUSES,
     LEAD_STATUSES,
     LOST_REASONS,
+    PROJECT_ACCOUNT_STATUSES,
+    PROJECT_ACCOUNT_TYPES,
     TERRITORIES,
     TERRITORY_ROOT,
     TICKET_CATEGORIES,
@@ -64,6 +66,12 @@ TERRITORY_COUNTRIES_APPLIED_FLAG = "tender_crm_territory_countries_applied"
 
 TICKET_STATUS_ORDERING_APPLIED_FLAG = "tender_crm_ticket_status_ordering_applied"
 TICKET_PRIORITY_ORDERING_APPLIED_FLAG = "tender_crm_ticket_priority_ordering_applied"
+
+# Its own one-shot, for the same reason as every flag above: the status order is
+# an independent migration that must not be marked done by another seed.
+PROJECT_ACCOUNT_STATUS_ORDERING_APPLIED_FLAG = (
+    "tender_crm_project_account_status_ordering_applied"
+)
 
 
 def seed_deal_statuses():
@@ -323,6 +331,57 @@ def seed_ticket_categories():
         ).insert(ignore_permissions=True)
 
 
+def seed_project_account_statuses():
+    """Create the Project Account stages, and order them once.
+
+    Same two-speed idempotency as seed_ticket_statuses(): a missing status is
+    created on every run, but re-ordering or re-colouring ones that already
+    exist would undo what a sales manager arranged, so that half runs exactly
+    once. Category is never rewritten — it is the property with meaning beyond
+    presentation.
+    """
+    ordering_applied = frappe.db.get_global(
+        PROJECT_ACCOUNT_STATUS_ORDERING_APPLIED_FLAG
+    )
+
+    for position, (status, category, color) in enumerate(
+        PROJECT_ACCOUNT_STATUSES, start=1
+    ):
+        if not frappe.db.exists("Project Account Status", status):
+            frappe.get_doc(
+                {
+                    "doctype": "Project Account Status",
+                    "status": status,
+                    "category": category,
+                    "position": position,
+                    "color": color,
+                }
+            ).insert(ignore_permissions=True)
+        elif not ordering_applied:
+            frappe.db.set_value(
+                "Project Account Status",
+                status,
+                {"position": position, "color": color},
+            )
+
+    if not ordering_applied:
+        frappe.db.set_global(PROJECT_ACCOUNT_STATUS_ORDERING_APPLIED_FLAG, "1")
+
+
+def seed_project_account_types():
+    """Create the starter Project Account types.
+
+    Creation-only and unflagged, like seed_ticket_types(): no position or colour
+    exists for a re-run to fight a human over.
+    """
+    for type_name in PROJECT_ACCOUNT_TYPES:
+        if frappe.db.exists("Project Account Type", type_name):
+            continue
+        frappe.get_doc(
+            {"doctype": "Project Account Type", "type_name": type_name}
+        ).insert(ignore_permissions=True)
+
+
 def seed_all():
     """Everything, in dependency order. Used by after_install."""
     seed_deal_statuses()
@@ -335,3 +394,5 @@ def seed_all():
     seed_ticket_priorities()
     seed_ticket_types()
     seed_ticket_categories()
+    seed_project_account_statuses()
+    seed_project_account_types()

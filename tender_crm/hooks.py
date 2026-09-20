@@ -294,6 +294,14 @@ doc_events = {
 #     receiver acts on. See setup.configure_ticket_email_intake.
 
 
+# Project Accounts
+# ----------------
+# Absent from this file for the same reason as Ticketing: Project Account and its
+# two masters are doctypes this app owns, so there is nothing to wire — no route
+# rule, no fixture, no doc_event. Its timeline endpoint
+# (api/project_account_activities.py) is registered by its decorator.
+
+
 # Read APIs
 # ---------
 # Also deliberately absent. tender_crm/api/ holds the app's whitelisted read

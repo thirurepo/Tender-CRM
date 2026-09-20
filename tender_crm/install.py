@@ -25,6 +25,7 @@ from tender_crm.setup import (
     ensure_lead_import_fields,
     ensure_link_fields,
     ensure_organization_geo_side_panel,
+    ensure_project_account_side_panel_layouts,
     ensure_side_panel_layouts,
     ensure_support_agent_role,
     ensure_territory_geo_fields,
@@ -80,5 +81,8 @@ def after_install():
     ensure_ticket_side_panel_layouts()
     seed_ticket_settings()
     configure_ticket_email_intake()
+
+    # Project Accounts. Its masters were seeded by seed_all() above.
+    ensure_project_account_side_panel_layouts()
 
     frappe.db.commit()

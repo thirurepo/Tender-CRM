@@ -143,3 +143,27 @@ TICKET_CATEGORIES = [
     "Account & Billing",
     "Other",
 ]
+
+
+# Project Accounts
+# ----------------
+# (status, category, color)
+#
+# `category` is what anything downstream reads — never the status name — so a
+# site can rename or add statuses without breaking "is this account still
+# running?". Only Closed stamps Project Account.closed_date. List order is the
+# board order.
+PROJECT_ACCOUNT_STATUSES = [
+    ("Active", "Open", "green"),
+    ("On Hold", "Paused", "amber"),
+    ("Closed", "Closed", "black"),
+]
+
+# A starter set only, and a guess: how TSI classifies a project account was not
+# specified when the doctype was added. Nothing in the code reads a type by
+# name, so the sales lead is expected to edit this list on the site.
+PROJECT_ACCOUNT_TYPES = [
+    "Fixed Hours",
+    "Retainer",
+    "Time & Material",
+]
