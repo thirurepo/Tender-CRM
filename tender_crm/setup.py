@@ -95,6 +95,36 @@ def ensure_link_fields():
         )
 
 
+# CRM Deal has no way to retire a deal upstream: the only exits are the terminal
+# statuses (Won / Lost, which still count in the reports) or deletion, which
+# takes the deal's whole history with it. This flag is the third option — take a
+# deal out of the working pipeline without losing anything. The Deals list and
+# kanban filter it out (frontend/src/pages/Deals.vue); the Deal page carries the
+# Deactivate / Reactivate button.
+DEAL_DEACTIVATION_FIELD = {
+    "dt": "CRM Deal",
+    "fieldname": "tsi_disabled",
+    "label": "Deactivated",
+    "fieldtype": "Check",
+    "default": "0",
+    "no_copy": 1,
+    "insert_after": "status",
+    "description": "Hides this deal from the Deals list and kanban without deleting it.",
+}
+
+
+def ensure_deal_deactivation_field():
+    """Add the `tsi_disabled` flag to CRM Deal (see DEAL_DEACTIVATION_FIELD)."""
+    spec = DEAL_DEACTIVATION_FIELD
+    if not frappe.db.exists("DocType", spec["dt"]):
+        return
+    if frappe.db.exists("Custom Field", f"{spec['dt']}-{spec['fieldname']}"):
+        return
+    frappe.get_doc({"doctype": "Custom Field", "module": MODULE, **spec}).insert(
+        ignore_permissions=True
+    )
+
+
 def ensure_lead_import_fields():
     """Create CRM Lead's legacy-import fields (see lead_import_schema.py).
 

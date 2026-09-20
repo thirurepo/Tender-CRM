@@ -17,6 +17,12 @@
         :actions="document.actions"
       />
       <AssignTo v-model="assignees.data" doctype="CRM Deal" :docname="dealId" />
+      <Badge
+        v-if="doc.tsi_disabled"
+        theme="orange"
+        variant="subtle"
+        :label="__('Deactivated')"
+      />
       <Dropdown
         v-if="doc && document.statuses"
         :options="statuses"
@@ -123,6 +129,18 @@
               :tooltip="__('Attach a File')"
               :icon="AttachmentIcon"
               @click="showFilesUploader = true"
+            />
+
+            <Button
+              v-if="canWrite"
+              :tooltip="
+                doc.tsi_disabled
+                  ? __('Reactivate this deal')
+                  : __('Deactivate and hide this deal')
+              "
+              variant="subtle"
+              :icon="doc.tsi_disabled ? 'lucide-rotate-ccw' : 'lucide-eye-off'"
+              @click="toggleDeactivated"
             />
 
             <Button
@@ -395,6 +413,7 @@ import { callEnabled } from '@/composables/telephony'
 import { useBroadcast } from '@/composables/useBroadcast'
 import {
   createResource,
+  Badge,
   Dropdown,
   Tooltip,
   Avatar,
@@ -450,6 +469,7 @@ const {
 } = useDocument('CRM Deal', props.dealId)
 
 const canDelete = computed(() => permissions.data?.permissions?.delete || false)
+const canWrite = computed(() => permissions.data?.permissions?.write || false)
 
 const doc = computed(() => document.doc || {})
 
@@ -788,6 +808,32 @@ function updateField(name, value) {
         doc.value[name] = oldValues
       }
       toast.error(err.messages?.[0] || __('Error updating field'))
+    },
+  })
+}
+
+// Deactivating takes the deal out of the Deals list and kanban (Deals.vue filters
+// on tsi_disabled) without deleting it, so it also drops the user back on that
+// list — leaving them on a deal that just vanished from it would be confusing.
+// Reactivating stays on the page: the deal is only reachable by direct link
+// while deactivated, so that is where the button is.
+function toggleDeactivated() {
+  const deactivating = !doc.value.tsi_disabled
+  doc.value.tsi_disabled = deactivating ? 1 : 0
+
+  document.save.submit(null, {
+    onSuccess: () => {
+      if (deactivating) {
+        toast.success(__('Deal deactivated'))
+        router.push({ name: 'Deals' })
+      } else {
+        toast.success(__('Deal reactivated'))
+        reload.value = true
+      }
+    },
+    onError: (err) => {
+      doc.value.tsi_disabled = deactivating ? 0 : 1
+      toast.error(err.messages?.[0] || __('Error updating deal'))
     },
   })
 }

@@ -19,6 +19,7 @@ from tender_crm.setup import (
     ensure_client_lead_fields,
     ensure_comment_import_fields,
     ensure_contact_import_fields,
+    ensure_deal_deactivation_field,
     ensure_disabled_flag_fields,
     ensure_form_scripts,
     ensure_lead_import_fields,
@@ -51,6 +52,7 @@ def after_install():
     """
     seed_all()
     ensure_link_fields()
+    ensure_deal_deactivation_field()
     ensure_client_lead_fields()
     ensure_side_panel_layouts()
     configure_erpnext_integration()

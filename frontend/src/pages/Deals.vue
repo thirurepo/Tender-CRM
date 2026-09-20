@@ -23,6 +23,7 @@
     v-model:resizeColumn="triggerResize"
     v-model:updatedPageCount="updatedPageCount"
     doctype="CRM Deal"
+    :filters="{ tsi_disabled: 0 }"
     :options="{
       allowedViews: ['list', 'group_by', 'kanban'],
     }"
