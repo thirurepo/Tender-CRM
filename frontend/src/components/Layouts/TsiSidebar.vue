@@ -4,8 +4,10 @@
   AppSidebar.vue's dynamic saved-views nav, which doesn't fit this design's
   fixed grouped layout.
 
-  "Activity Feed", "Leads", "Clients", "Deals", "Contacts", "Notes", "Call
-  Logs", "Tasks" and "Tickets" are live routes, as is Dashboard's "Main". This
+  "Activity Feed", "Leads", "Clients", "Contacts", "Notes", "Call Logs",
+  "Tasks" and "Tickets" are live routes, as is Dashboard's "Main". There is
+  deliberately no "Deals" entry: the team works leads and clients, and deals are
+  reached from those pages. The Deals route itself is untouched. This
   sidebar replaced stock AppSidebar on desktop, so it also has to carry what
   AppSidebar gave every user and the design had dropped: the notifications
   bell (its panel is mounted by DesktopLayout) and the user menu (logout, theme,
@@ -229,7 +231,6 @@ import LeadsIcon from '@/components/Icons/LeadsIcon.vue'
 import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
 import TaskIcon from '@/components/Icons/TaskIcon.vue'
 import TicketsIcon from '@/components/Icons/TicketsIcon.vue'
-import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
 import NoteIcon from '@/components/Icons/NoteIcon.vue'
 import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
@@ -367,15 +368,9 @@ const taskCount = createResource({
   transform: (value) => value ?? 0,
 })
 
-// Deals, Notes and Call Logs get the same "how big is this thing?" chip as the
-// rest of the CRM group. Contacts deliberately does not: it is a lookup list
-// rather than a queue anyone works through, so a total would be noise.
-const dealCount = createResource({
-  url: 'frappe.client.get_count',
-  params: { doctype: 'CRM Deal' },
-  auto: true,
-  transform: (value) => value ?? 0,
-})
+// Notes and Call Logs get the same "how big is this thing?" chip as the rest of
+// the CRM group. Contacts deliberately does not: it is a lookup list rather
+// than a queue anyone works through, so a total would be noise.
 const noteCount = createResource({
   url: 'frappe.client.get_count',
   params: { doctype: 'FCRM Note' },
@@ -420,12 +415,6 @@ const navGroups = computed(() => [
         icon: OrganizationsIcon,
         count: clientCount.data ?? '…',
         route: 'Organizations',
-      },
-      {
-        label: 'Deals',
-        icon: DealsIcon,
-        count: dealCount.data ?? '…',
-        route: 'Deals',
       },
       {
         label: 'Contacts',
