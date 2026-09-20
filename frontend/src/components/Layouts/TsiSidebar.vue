@@ -17,7 +17,7 @@
 <template>
   <aside class="tsi-sidebar">
     <div class="tsi-sidebar__brand">
-      <span class="tsi-sidebar__brand-name">CRM - Tender</span>
+      <span class="tsi-sidebar__brand-name">{{ brand.name || 'CRM - Tender' }}</span>
       <span class="tsi-sidebar__brand-rule" />
     </div>
 
@@ -94,6 +94,7 @@ import { createResource } from 'frappe-ui'
 import QuickJump from '@/components/QuickJump.vue'
 import { sessionStore } from '@/stores/session'
 import { usersStore } from '@/stores/users'
+import { getSettings } from '@/stores/settings'
 import { showSettings, activeSettingsPage } from '@/composables/settings'
 import { useSettingsTabs } from '@/composables/settingsTabs'
 
@@ -104,6 +105,14 @@ const quickJumpOpen = ref(false)
 const session = sessionStore()
 const { getUser } = usersStore()
 const user = computed(() => getUser(session.user))
+
+// This sidebar renders on every /tsi-crm route. Most list pages already pull
+// FCRM Settings in indirectly via ViewControls.vue, but Activity Feed (the
+// landing route) doesn't, and nothing here read `brand` at all before this —
+// the sidebar name was hardcoded regardless of what Brand Settings held.
+// Calling getSettings() here both fixes the display and guarantees the fetch
+// fires on every route, landing page included.
+const { brand } = getSettings()
 
 const initials = computed(() =>
   (user.value.full_name || '')

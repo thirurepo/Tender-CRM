@@ -26,8 +26,6 @@ app_license = "mit"
 required_apps = ["frappe/crm"]
 
 # Serves the Tender CRM design's forked frontend (../frontend/) at /tsi-crm.
-# Purely additive: crm's own /crm route (apps/crm/crm/hooks.py) is untouched
-# and keeps working exactly as before.
 website_route_rules = [
     # Frappe's default www-page resolution matches a bare path straight to a
     # same-named file (this is how crm's own bare /crm works, with no rule at
@@ -37,6 +35,23 @@ website_route_rules = [
     # not just the sub-path one below.
     {"from_route": "/tsi-crm", "to_route": "tsi_crm"},
     {"from_route": "/tsi-crm/<path:app_path>", "to_route": "tsi_crm"},
+]
+
+# crm's own /crm view is upstream's generic pipeline UI; this site only wants
+# the TSI design at /tsi-crm to be reachable. website_redirects is checked by
+# frappe.website.path_resolver before any route rule or same-named-file match
+# (see resolve_redirect() in frappe/website/path_resolver.py), so it hides
+# /crm — and any deep link under it, e.g. /crm/leads/CRM-LEAD-0001 — without
+# touching apps/crm/crm/hooks.py or its www/crm.py. /crm-form (crm's public,
+# unauthenticated lead-capture embed) is a different feature and deliberately
+# not matched here.
+website_redirects = [
+    {"source": "/crm", "target": "/tsi-crm", "redirect_http_status": 302},
+    {
+        "source": r"/crm/(.*)",
+        "target": r"/tsi-crm/\1",
+        "redirect_http_status": 302,
+    },
 ]
 
 
