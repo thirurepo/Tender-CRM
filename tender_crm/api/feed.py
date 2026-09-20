@@ -53,6 +53,7 @@ from frappe.utils import (
 	add_to_date,
 	cint,
 	get_datetime,
+	get_datetime_str,
 	getdate,
 	now_datetime,
 	strip_html_tags,
@@ -273,7 +274,10 @@ def get_recent_count(hours: int | None = 24) -> int:
 	"312". The chip is a nudge, not a report.
 	"""
 	since = add_to_date(now_datetime(), hours=-max(cint(hours) or 24, 1))
-	page = get_feed(limit=MAX_LIMIT, from_date=since)
+	# get_feed is whitelisted, and inside a request frappe validates its type
+	# hints even on an in-process call, so from_date must be the string an HTTP
+	# caller would send, not a datetime.
+	page = get_feed(limit=MAX_LIMIT, from_date=get_datetime_str(since))
 	return len(page["events"])
 
 
