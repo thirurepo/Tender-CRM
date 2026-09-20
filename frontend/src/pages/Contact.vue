@@ -119,41 +119,6 @@
         />
       </div>
     </Resizer>
-    <Tabs
-      v-model="tabIndex"
-      as="div"
-      :tabs="tabs"
-      class="flex flex-1 overflow-hidden flex-col [&_[role='tab']]:px-0 [&_[role='tab']]:shrink-0 [&_[role='tablist']]:px-5 [&_[role='tablist']::-webkit-scrollbar]:h-0 [&_[role='tablist']]:min-h-[45px] [&_[role='tablist']]:gap-7.5 [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
-    >
-      <template #tab-item="{ tab, selected }">
-        <button
-          class="group flex items-center gap-2 border-b border-transparent py-2.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9"
-          :class="{ 'text-ink-gray-9': selected }"
-        >
-          <component :is="tab.icon" v-if="tab.icon" class="h-5" />
-          {{ __(tab.label) }}
-          <Badge
-            class="group-hover:bg-surface-gray-10"
-            :class="[selected ? 'bg-surface-gray-10' : 'bg-gray-600']"
-            variant="solid"
-            theme="gray"
-            size="sm"
-          >
-            {{ tab.count }}
-          </Badge>
-        </button>
-      </template>
-      <template #tab-panel="{ tab }">
-        <DealsListView
-          v-if="tab.label === 'Deals' && rows.length"
-          class="mt-4"
-          :rows="rows"
-          :columns="columns"
-          :options="{ selectable: false, showTooltip: false }"
-        />
-        <EmptyState v-if="!rows.length" :icon="tab.icon" name="Deals" />
-      </template>
-    </Tabs>
   </div>
   <ErrorPage
     v-else-if="errorTitle"
@@ -177,26 +142,19 @@ import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
-import DealsIcon from '@/components/Icons/DealsIcon.vue'
-import DealsListView from '@/components/ListViews/DealsListView.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import { validateIsImageFile, setupCustomizations } from '@/utils'
 import { useContactFields } from '@/composables/useContactFields'
-import { timestampCell } from '@/composables/useTimelinePreferences'
 import { getView } from '@/utils/view'
 import { useDocument } from '@/data/document'
 import { getSettings } from '@/stores/settings'
 import { getMeta } from '@/stores/meta'
 import { globalStore } from '@/stores/global.js'
-import { usersStore } from '@/stores/users.js'
-import { organizationsStore } from '@/stores/organizations.js'
-import { statusesStore } from '@/stores/statuses'
 import { callEnabled } from '@/composables/telephony'
 import {
   Breadcrumbs,
   Avatar,
   FileUploader,
-  Tabs,
   call,
   createResource,
   usePageMeta,
@@ -207,14 +165,10 @@ import { useDoctypeModal } from '@/composables/doctypeModal'
 import { useTelemetry } from 'frappe-ui/frappe'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import EmptyState from '@/components/ListViews/EmptyState.vue'
 
 const { brand } = getSettings()
 const { makeCall, $dialog, $socket } = globalStore()
 
-const { getUser } = usersStore()
-const { getOrganization } = organizationsStore()
-const { getDealStatus } = statusesStore()
 const { doctypeMeta } = getMeta('Contact')
 const { capture } = useTelemetry()
 
@@ -298,28 +252,6 @@ function changeContactImage(file) {
   })
 }
 
-const tabIndex = ref(0)
-const tabs = [
-  {
-    label: 'Deals',
-    icon: DealsIcon,
-    count: computed(() => deals.data?.length),
-  },
-]
-
-const deals = createResource({
-  url: 'tender_crm.api.linked_deals.get_linked_deals',
-  cache: ['deals', props.contactId],
-  params: { contact: props.contactId },
-  auto: true,
-})
-
-const rows = computed(() => {
-  if (!deals.data || deals.data == []) return []
-
-  return deals.data.map((row) => getDealRowObject(row))
-})
-
 const sections = createResource({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
   cache: ['sidePanelSections', 'Contact'],
@@ -352,71 +284,6 @@ const fieldPlaceholderMap = {
   mobile_no: __('Add Mobile Number...'),
   company_name: __('Add Organization...'),
 }
-
-const { getFormattedCurrency } = getMeta('CRM Deal')
-
-const columns = computed(() => dealColumns)
-
-function getDealRowObject(deal) {
-  return {
-    name: deal.name,
-    organization: {
-      label: deal.organization,
-      logo: getOrganization(deal.organization)?.organization_logo,
-    },
-    deal_value: getFormattedCurrency('deal_value', deal),
-    status: {
-      label: deal.status,
-      color: getDealStatus(deal.status)?.color,
-    },
-    email: deal.email,
-    mobile_no: deal.mobile_no,
-    deal_owner: {
-      label: deal.deal_owner && getUser(deal.deal_owner).full_name,
-      ...(deal.deal_owner && getUser(deal.deal_owner)),
-    },
-    modified: timestampCell(deal.modified),
-  }
-}
-
-const dealColumns = [
-  {
-    label: __('Organization'),
-    key: 'organization',
-    width: '11rem',
-  },
-  {
-    label: __('Amount'),
-    key: 'deal_value',
-    align: 'right',
-    width: '9rem',
-  },
-  {
-    label: __('Status'),
-    key: 'status',
-    width: '10rem',
-  },
-  {
-    label: __('Email'),
-    key: 'email',
-    width: '12rem',
-  },
-  {
-    label: __('Mobile Number'),
-    key: 'mobile_no',
-    width: '11rem',
-  },
-  {
-    label: __('Deal Owner'),
-    key: 'deal_owner',
-    width: '10rem',
-  },
-  {
-    label: __('Last Modified'),
-    key: 'modified',
-    width: '8rem',
-  },
-]
 
 const { showModal } = useDoctypeModal()
 

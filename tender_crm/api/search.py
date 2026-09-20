@@ -4,7 +4,7 @@
 # doctype from the frontend, because the ranking is cross-type: an exact Client
 # name match has to be able to outrank a substring hit on a Lead's phone
 # number, and only code that can see every candidate at once can decide that.
-# It is also one round trip per debounced keystroke instead of five, and it
+# It is also one round trip per debounced keystroke instead of four, and it
 # gives a doctype the caller cannot read somewhere to be silently skipped — a
 # Support Agent has Ticket read and no CRM Lead read, and their quick jump
 # should find tickets rather than fail.
@@ -13,14 +13,14 @@
 # Controls/Link.vue uses it for link fields and it is the obvious reach.
 # `search_widget()` builds its OR clause from `name` + the doctype's
 # title_field + its `search_fields` (frappe/desk/search.py), and none of CRM
-# Lead, CRM Organization, Contact, Ticket or CRM Deal declares search_fields.
+# Lead, CRM Organization, Contact or Ticket declares search_fields.
 # So search_link on CRM Lead searches the naming-series id and lead_name and
 # nothing else — not email, not mobile_no, not tsi_legacy_id. Finding a lead by
 # the phone number on a sticky note is the whole feature. Link.vue keeps using
 # search_link, which is exactly what that endpoint is for.
 #
 # Every query goes through frappe.get_list, never frappe.get_all and never raw
-# SQL: get_list is what applies CRM Lead's and CRM Deal's
+# SQL: get_list is what applies CRM Lead's
 # permission_query_conditions (crm's org_hierarchy — a Sales User sees their own
 # records and their subtree's, not the company's) plus User Permissions.
 # get_all bypasses both, silently.
@@ -136,16 +136,6 @@ SEARCH_TARGETS = [
 		"extra_fields": ["status", "organization", "modified"],
 		"status_field": "status",
 	},
-	{
-		"doctype": "CRM Deal",
-		"entity": "deal",
-		"title_field": "organization",
-		"route": {"name": "Deal", "param": "dealId"},
-		"search_fields": ["name", "organization", "lead_name", "email", "mobile_no"],
-		"subtitle_fields": ["lead_name", "email"],
-		"extra_fields": ["status", "modified"],
-		"status_field": "status",
-	},
 ]
 
 # Human labels for the chip on each result row. Kept out of SEARCH_TARGETS so
@@ -157,7 +147,6 @@ ENTITY_LABELS = {
 	"client": lambda: _("Client"),
 	"contact": lambda: _("Contact"),
 	"ticket": lambda: _("Ticket"),
-	"deal": lambda: _("Deal"),
 }
 
 
@@ -166,9 +155,9 @@ def quick_jump(query: str, limit: int | None = None) -> dict:
 	"""Search every CRM entity at once and return one ranked, flat result list.
 
 	Permission is enforced per doctype by `frappe.get_list`, which is the only
-	reason this can be a single endpoint spanning five doctypes: each get_list
+	reason this can be a single endpoint spanning four doctypes: each get_list
 	applies that doctype's own permission_query_conditions and the caller's
-	User Permissions before a row is ever ranked. For CRM Lead and CRM Deal
+	User Permissions before a row is ever ranked. For CRM Lead
 	that is crm's org_hierarchy condition, so a Sales User's quick jump reaches
 	their own and their subtree's records and no further.
 
