@@ -9,7 +9,8 @@
   crm's get_sidepanel_sections has no generated fallback, so without it the panel
   renders empty. See tender_crm/setup.py::ensure_project_account_side_panel_layouts.
 
-  Tabs: Activity, Comments, Data, Tasks, Notes and Attachments. No Emails, Calls
+  Tabs: Activity, Comments, Data, Tasks, Notes, Attachments and Timesheet (hours
+  per developer, ProjectAccountTimesheet.vue). No Emails, Calls
   or WhatsApp — a project account has no mailbox or phone number of its own, and
   an empty tab is worse than an absent one.
 -->
@@ -52,8 +53,13 @@
       :tabs="tabs"
       class="flex flex-1 overflow-hidden flex-col [&_[role='tab']]:px-0 [&_[role='tab']]:shrink-0 [&_[role='tablist']]:px-5 [&_[role='tablist']::-webkit-scrollbar]:h-0 [&_[role='tablist']]:min-h-[45px] [&_[role='tablist']]:gap-7.5 [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
     >
-      <template #tab-panel>
+      <template #tab-panel="{ tab }">
+        <ProjectAccountTimesheet
+          v-if="tab.name === 'Timesheet'"
+          :projectAccountId="projectAccountId"
+        />
         <Activities
+          v-else
           ref="activities"
           v-model:reload="reload"
           v-model:tabIndex="tabIndex"
@@ -105,6 +111,7 @@ import DetailsIcon from '@/components/Icons/DetailsIcon.vue'
 import TaskIcon from '@/components/Icons/TaskIcon.vue'
 import NoteIcon from '@/components/Icons/NoteIcon.vue'
 import AttachmentIcon from '@/components/Icons/AttachmentIcon.vue'
+import TimesheetIcon from '@/components/Icons/TimesheetIcon.vue'
 import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import AssignTo from '@/components/AssignTo.vue'
@@ -112,6 +119,7 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import Resizer from '@/components/Resizer.vue'
 import ErrorPage from '@/components/ErrorPage.vue'
 import Activities from '@/components/Activities/Activities.vue'
+import ProjectAccountTimesheet from '@/components/ProjectAccountTimesheet.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import { useDocument } from '@/data/document'
 import { projectAccountStatusesStore } from '@/stores/projectAccountStatuses'
@@ -222,6 +230,7 @@ const tabs = computed(() => [
   { name: 'Tasks', label: __('Tasks'), icon: TaskIcon },
   { name: 'Notes', label: __('Notes'), icon: NoteIcon },
   { name: 'Attachments', label: __('Attachments'), icon: AttachmentIcon },
+  { name: 'Timesheet', label: __('Timesheet'), icon: TimesheetIcon },
 ])
 
 const { tabIndex } = useActiveTabManager(tabs, 'lastProjectAccountTab')

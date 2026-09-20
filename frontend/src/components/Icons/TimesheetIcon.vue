@@ -1,0 +1,18 @@
+<!-- Clock face, for the Project Account "Timesheet" tab. -->
+<template>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle cx="8" cy="8" r="6.5" stroke="currentColor" />
+    <path
+      d="M8 4.5V8L10.25 9.5"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+</template>
