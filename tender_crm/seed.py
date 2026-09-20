@@ -57,6 +57,11 @@ LEAD_RECOLOR_APPLIED_FLAG = "tender_crm_lead_status_recolor_applied"
 # lead ones and not shared with each other: statuses and priorities are two
 # independent orderings, and this app has already been bitten once by a single
 # flag being set by whichever seed ran first and read as "done" by the next.
+# One-shot: give the regional India territories their country. Modifies existing
+# territories, so it needs its own flag (an administrator may later edit or clear
+# the Countries table on purpose and must not have it re-filled on the next migrate).
+TERRITORY_COUNTRIES_APPLIED_FLAG = "tender_crm_territory_countries_applied"
+
 TICKET_STATUS_ORDERING_APPLIED_FLAG = "tender_crm_ticket_status_ordering_applied"
 TICKET_PRIORITY_ORDERING_APPLIED_FLAG = "tender_crm_ticket_priority_ordering_applied"
 
@@ -182,6 +187,33 @@ def seed_territories():
                 "is_group": 0,
             }
         ).insert(ignore_permissions=True)
+
+
+def seed_territory_countries():
+    """Link the "<Region> India" territories to India (INR), once.
+
+    Only territories whose Countries table is empty are touched, so nothing an
+    administrator configured is overwritten. "International" is deliberately left
+    without countries: an empty table means Organizations may pick any country.
+    """
+    if frappe.db.get_global(TERRITORY_COUNTRIES_APPLIED_FLAG):
+        return
+
+    # Skipped (flag left unset) until the Countries custom field exists, so a
+    # migrate that reaches here before ensure_territory_geo_fields cannot burn the flag.
+    if not frappe.get_meta("CRM Territory").has_field("tsi_countries"):
+        return
+
+    for territory in TERRITORIES:
+        if not territory.endswith("India") or not frappe.db.exists("CRM Territory", territory):
+            continue
+        doc = frappe.get_doc("CRM Territory", territory)
+        if doc.get("tsi_countries"):
+            continue
+        doc.append("tsi_countries", {"country": "India", "currency": "INR"})
+        doc.save(ignore_permissions=True)
+
+    frappe.db.set_global(TERRITORY_COUNTRIES_APPLIED_FLAG, "1")
 
 
 def seed_sales_units():

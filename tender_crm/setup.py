@@ -26,6 +26,11 @@ from tender_crm.lead_import_schema import (
     DISABLED_FLAG_FIELDS,
     FORM_SCRIPTS as LEAD_FORM_SCRIPTS,
 )
+from tender_crm.territory_geo_schema import (
+    ORGANIZATION_GEO_SIDE_PANEL_FIELDS,
+    TERRITORY_GEO_FIELDS,
+    TERRITORY_GEO_FORM_SCRIPTS,
+)
 
 # `module` is set on every custom field on purpose. A Custom Field inserted without
 # one is owned by no app, so it would never be picked up by a fixture export and
@@ -342,6 +347,73 @@ def ensure_client_form_scripts():
     _install_form_scripts(CLIENT_FORM_SCRIPTS)
 
 
+def ensure_territory_geo_fields():
+    """Create CRM Territory's Countries table and CRM Organization's Timezone.
+
+    Guarded per field, matching ensure_client_import_fields. The child doctype
+    (CRM Territory Country) ships with the app and is synced by migrate before
+    patches run; on install it is synced before after_install, so the Table
+    field always finds it.
+    """
+    for spec in TERRITORY_GEO_FIELDS:
+        doctype = spec["dt"]
+
+        if not frappe.db.exists("DocType", doctype):
+            continue
+
+        if frappe.db.exists("Custom Field", f"{doctype}-{spec['fieldname']}"):
+            continue
+        frappe.get_doc({"doctype": "Custom Field", "module": MODULE, **spec}).insert(
+            ignore_permissions=True
+        )
+
+
+def ensure_territory_geo_form_scripts():
+    """Install the CRM Organization form script that drives country/currency/timezone."""
+    _install_form_scripts(TERRITORY_GEO_FORM_SCRIPTS)
+
+
+ORG_GEO_SIDE_PANEL_APPLIED_FLAG = "tender_crm_org_geo_side_panel_applied"
+
+
+def ensure_organization_geo_side_panel():
+    """Add territory/country/currency/timezone to an existing Organization Side Panel.
+
+    _install_side_panel_layouts is create-only, so a site whose layout already
+    exists would never show the new fields. This appends only the ones missing
+    from the layout — never reorders or removes anything — and runs once behind
+    its own flag: an administrator who later removes a field from the layout on
+    purpose must not have it put back on the next migrate.
+    """
+    import json
+
+    if frappe.db.get_global(ORG_GEO_SIDE_PANEL_APPLIED_FLAG):
+        return
+
+    name = frappe.db.get_value(
+        "CRM Fields Layout", {"dt": "CRM Organization", "type": "Side Panel"}
+    )
+    if not name:
+        # No layout yet: ensure_side_panel_layouts() will create one that already
+        # includes these fields, so there is nothing to amend.
+        return
+
+    layout = json.loads(frappe.db.get_value("CRM Fields Layout", name, "layout") or "[]")
+    present = {
+        field
+        for section in layout
+        for column in section.get("columns", [])
+        for field in column.get("fields", [])
+    }
+    missing = [f for f in ORGANIZATION_GEO_SIDE_PANEL_FIELDS if f not in present]
+
+    if missing and layout and layout[0].get("columns"):
+        layout[0]["columns"][0].setdefault("fields", []).extend(missing)
+        frappe.db.set_value("CRM Fields Layout", name, "layout", json.dumps(layout))
+
+    frappe.db.set_global(ORG_GEO_SIDE_PANEL_APPLIED_FLAG, "1")
+
+
 def _install_form_scripts(specs):
     """Shared installer behind ensure_form_scripts / ensure_client_form_scripts.
 
@@ -384,6 +456,7 @@ SIDE_PANEL_LAYOUTS = [
             "tsi_cost_code",
             "tsi_referred_by",
             "tsi_client_since",
+            *ORGANIZATION_GEO_SIDE_PANEL_FIELDS,
         ],
     },
 ]

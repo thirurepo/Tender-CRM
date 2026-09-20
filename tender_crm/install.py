@@ -10,7 +10,7 @@
 
 import frappe
 
-from tender_crm.seed import seed_all
+from tender_crm.seed import seed_all, seed_territory_countries
 from tender_crm.setup import (
     configure_erpnext_integration,
     configure_ticket_email_intake,
@@ -23,8 +23,11 @@ from tender_crm.setup import (
     ensure_form_scripts,
     ensure_lead_import_fields,
     ensure_link_fields,
+    ensure_organization_geo_side_panel,
     ensure_side_panel_layouts,
     ensure_support_agent_role,
+    ensure_territory_geo_fields,
+    ensure_territory_geo_form_scripts,
     ensure_ticket_side_panel_layouts,
     seed_settings,
     seed_ticket_settings,
@@ -62,6 +65,10 @@ def after_install():
     ensure_client_form_scripts()
     ensure_contact_import_fields()
     ensure_comment_import_fields()
+    ensure_territory_geo_fields()
+    ensure_territory_geo_form_scripts()
+    ensure_organization_geo_side_panel()
+    seed_territory_countries()
 
     # Ticketing. seed_all() above has already created the ticket masters, so the
     # settings defaults below have something to point at, and the role has to
