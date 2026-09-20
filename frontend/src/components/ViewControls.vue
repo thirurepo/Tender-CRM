@@ -355,6 +355,15 @@ const props = defineProps({
   },
 })
 
+// Kanban defaults are crm's Lead/Deal ones ('status' column, no title field),
+// which a doctype without a `status` field can't use. A page passes its own via
+// options.kanban = { columnField, titleField, fields } — see Organizations.vue.
+const kanbanDefaults = {
+  columnField: props.options.kanban?.columnField || 'status',
+  titleField: props.options.kanban?.titleField || '',
+  fields: props.options.kanban?.fields || '',
+}
+
 const { brand } = getSettings()
 const { $dialog } = globalStore()
 const { reload: reloadView, getDefaultView, getView } = viewsStore()
@@ -427,10 +436,10 @@ const view = ref({
   icon: '',
   filters: {},
   order_by: 'modified desc',
-  column_field: 'status',
-  title_field: '',
+  column_field: kanbanDefaults.columnField,
+  title_field: kanbanDefaults.titleField,
   kanban_columns: '',
-  kanban_fields: '',
+  kanban_fields: kanbanDefaults.fields,
   columns: '',
   rows: '',
   load_default_columns: false,
@@ -465,10 +474,10 @@ function getParams() {
   const group_by_field = _view?.group_by_field || 'owner'
   const columns = _view?.columns || ''
   const rows = _view?.rows || ''
-  const column_field = _view?.column_field || 'status'
-  const title_field = _view?.title_field || ''
+  const column_field = _view?.column_field || kanbanDefaults.columnField
+  const title_field = _view?.title_field || kanbanDefaults.titleField
   const kanban_columns = _view?.kanban_columns || ''
-  const kanban_fields = _view?.kanban_fields || ''
+  const kanban_fields = _view?.kanban_fields || kanbanDefaults.fields
 
   view.value = {
     name: view_name,
