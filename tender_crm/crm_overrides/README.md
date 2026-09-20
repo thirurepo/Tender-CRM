@@ -11,6 +11,7 @@ Everything Tender CRM changes about the behaviour of Frappe CRM and ERPNext.
 | `lead_import.py` | Keeps `tsi_converted_date` / `tsi_last_status_change` on CRM Lead accurate for leads worked normally, after the legacy CRM import (see `tender_crm/Import_crm_data/import_leads.py`) sets both directly from historical CSV data. |
 | `client_link.py` | Stamps `CRM Organization.tsi_converted_from_lead` when "Convert to client" creates a deal from a lead, so the client's timeline (`api/client_activities.py`) keeps the lead's history. First conversion wins. |
 | `todo.py` | A whitelisted `get_todos` endpoint the tsi-crm Tasks tab calls alongside `crm.api.activities.get_activities`, so core `ToDo` records (created by tsi-crm's existing Assign-To feature) show up next to `CRM Task`. Additive only — does not override the vendor endpoint. |
+| `default_app.py` | `on_login` hook: a sign-in on the CRM hostname (`crm.tendersoftware.in`, or `tsi_crm_hosts` in site_config) lands in `/tsi-crm`; the ERP hostname keeps its own default. Needed because Frappe's `default_app` is site-wide and unchecked against permissions. |
 
 ## The gap this closes
 

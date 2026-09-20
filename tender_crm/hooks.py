@@ -203,6 +203,14 @@ fixtures = [
 ]
 
 
+# Login
+# -----
+# Signing in on the CRM domain (crm.tendersoftware.in) lands in /tsi-crm, while
+# the same site's ERP domain keeps its own default. Site-wide `default_app`
+# cannot express that; see crm_overrides/default_app.py for why and how.
+on_login = "tender_crm.crm_overrides.default_app.on_login"
+
+
 # Document Events
 # ---------------
 # The Quotation/Sales Order handlers no-op unless Tender CRM Settings is enabled
