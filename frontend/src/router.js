@@ -56,17 +56,20 @@ const routes = [
     component: () => import(`@/pages/${handleMobileView('Lead')}.vue`),
     props: true,
   },
+  // Deals are hidden throughout the app: the team works leads and clients. The
+  // route names stay registered so the places that still push { name: 'Deal' }
+  // (notifications, call logs, calendar events) and old bookmarks land on Leads
+  // instead of an "Invalid Page".
   {
     alias: '/deals',
     path: '/deals/view/:viewType?',
     name: 'Deals',
-    component: () => import('@/pages/Deals.vue'),
+    redirect: { name: 'Leads' },
   },
   {
     path: '/deals/:dealId',
     name: 'Deal',
-    component: () => import(`@/pages/${handleMobileView('Deal')}.vue`),
-    props: true,
+    redirect: { name: 'Leads' },
   },
   {
     alias: '/tickets',
@@ -250,9 +253,8 @@ router.beforeEach(async (to, from, next) => {
     window.location.href = '/login?redirect-to=/tsi-crm'
   } else if (to.matched.length === 0) {
     next({ name: 'Invalid Page' })
-  } else if (['Deal', 'Lead', 'Ticket'].includes(to.name) && !to.hash) {
+  } else if (['Lead', 'Ticket'].includes(to.name) && !to.hash) {
     const tabStorageKeys = {
-      Deal: 'lastDealTab',
       Lead: 'lastLeadTab',
       Ticket: 'lastTicketTab',
     }
@@ -262,7 +264,6 @@ router.beforeEach(async (to, from, next) => {
   } else if (
     [
       'Leads',
-      'Deals',
       'Tickets',
       'Contacts',
       'Organizations',
@@ -283,7 +284,6 @@ router.beforeEach(async (to, from, next) => {
       // its list view loads with no default view and no error.
       const doctypeMap = {
         Leads: 'CRM Lead',
-        Deals: 'CRM Deal',
         Tickets: 'Ticket',
         Contacts: 'Contact',
         Organizations: 'CRM Organization',

@@ -1,7 +1,7 @@
 <!--
   Client (CRM Organization) page, laid out like the Lead page: the same
   Activity / Emails / Comments / Data / Calls / Tasks / Notes / Attachments
-  tabs, plus the client-only Deals, Contacts and Tickets. Details live in the
+  tabs, plus the client-only Contacts and Tickets. Details live in the
   right-hand side panel, as on a lead. The timeline comes from
   tender_crm.api.client_activities, which merges in the history of the lead
   the client was converted from — so nothing logged on a lead is lost when it
@@ -55,16 +55,9 @@
         </button>
       </template>
       <template #tab-panel="{ tab }">
-        <template v-if="tab.name === 'Deals' || tab.name === 'Contacts'">
-          <DealsListView
-            v-if="tab.name === 'Deals' && rows.length"
-            class="mt-4"
-            :rows="rows"
-            :columns="columns"
-            :options="{ selectable: false, showTooltip: false }"
-          />
+        <template v-if="tab.name === 'Contacts'">
           <ContactsListView
-            v-else-if="tab.name === 'Contacts' && rows.length"
+            v-if="rows.length"
             class="mt-4"
             :rows="rows"
             :columns="columns"
@@ -237,7 +230,6 @@ import Resizer from '@/components/Resizer.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import Icon from '@/components/Icon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
-import DealsListView from '@/components/ListViews/DealsListView.vue'
 import ContactsListView from '@/components/ListViews/ContactsListView.vue'
 import LinkedTicketsList from '@/components/LinkedTicketsList.vue'
 import Activities from '@/components/Activities/Activities.vue'
@@ -255,7 +247,6 @@ import NoteIcon from '@/components/Icons/NoteIcon.vue'
 import LinkIcon from '@/components/Icons/LinkIcon.vue'
 import AttachmentIcon from '@/components/Icons/AttachmentIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
-import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
 import DeleteLinkedDocModal from '@/components/DeleteLinkedDocModal.vue'
 import CustomActions from '@/components/CustomActions.vue'
@@ -263,8 +254,6 @@ import { useDocument } from '@/data/document'
 import { getSettings } from '@/stores/settings'
 import { globalStore } from '@/stores/global'
 import { getMeta } from '@/stores/meta'
-import { usersStore } from '@/stores/users'
-import { statusesStore } from '@/stores/statuses'
 import { getView } from '@/utils/view'
 import {
   validateIsImageFile,
@@ -299,8 +288,6 @@ const props = defineProps({
 
 const { brand } = getSettings()
 const { $dialog, $socket, makeCall } = globalStore()
-const { getUser } = usersStore()
-const { getDealStatus } = statusesStore()
 const { doctypeMeta } = getMeta('CRM Organization')
 const { capture } = useTelemetry()
 
@@ -433,7 +420,7 @@ const contactMobile = computed(
 )
 
 async function openEmailBox() {
-  // Deals / Contacts / Tickets render no Activities, so the ref is null there:
+  // Contacts / Tickets render no Activities, so the ref is null there:
   // move to Emails by index and let Activities mount before reaching through.
   let current = tabs.value[tabIndex.value]?.name
   if (!['Emails', 'Comments', 'Activity'].includes(current)) {
@@ -490,30 +477,6 @@ const ticketCount = createResource({
   transform: (value) => value ?? 0,
 })
 
-const deals = createListResource({
-  type: 'list',
-  doctype: 'CRM Deal',
-  cache: ['deals', props.organizationId],
-  fields: [
-    'name',
-    'organization',
-    'currency',
-    'deal_value',
-    'status',
-    'email',
-    'mobile_no',
-    'deal_owner',
-    'modified',
-  ],
-  filters: {
-    organization: props.organizationId,
-    tsi_disabled: 0,
-  },
-  orderBy: 'modified desc',
-  pageLength: 20,
-  auto: true,
-})
-
 const contacts = createListResource({
   type: 'list',
   doctype: 'Contact',
@@ -536,7 +499,8 @@ const contacts = createListResource({
 })
 
 // Same tabs, in the same order, as the Lead page, so a converted lead reads the
-// same as a client; then the three views only a client has. `count` is what
+// same as a client; then the two views only a client has. There is deliberately
+// no Deals tab: deals are hidden throughout the app. `count` is what
 // marks a tab as a list with a badge rather than an Activities tab.
 const tabs = computed(() => [
   { name: 'Activity', label: __('Activity'), icon: ActivityIcon },
@@ -547,12 +511,6 @@ const tabs = computed(() => [
   { name: 'Tasks', label: __('Tasks'), icon: TaskIcon },
   { name: 'Notes', label: __('Notes'), icon: NoteIcon },
   { name: 'Attachments', label: __('Attachments'), icon: AttachmentIcon },
-  {
-    name: 'Deals',
-    label: __('Deals'),
-    icon: DealsIcon,
-    count: deals.data?.length ?? 0,
-  },
   {
     name: 'Contacts',
     label: __('Contacts'),
@@ -575,42 +533,13 @@ const { tabIndex, changeTabTo } = useActiveTabManager(
 const currentTabName = computed(() => tabs.value[tabIndex.value]?.name)
 
 const rows = computed(() => {
-  if (currentTabName.value === 'Deals') {
-    return (deals.data || []).map(getDealRowObject)
-  }
   if (currentTabName.value === 'Contacts') {
     return (contacts.data || []).map(getContactRowObject)
   }
   return []
 })
 
-const { getFormattedCurrency } = getMeta('CRM Deal')
-
-const columns = computed(() => {
-  return currentTabName.value === 'Deals' ? dealColumns : contactColumns
-})
-
-function getDealRowObject(deal) {
-  return {
-    name: deal.name,
-    organization: {
-      label: deal.organization,
-      logo: organization.doc?.organization_logo,
-    },
-    deal_value: getFormattedCurrency('deal_value', deal),
-    status: {
-      label: deal.status,
-      color: getDealStatus(deal.status)?.color,
-    },
-    email: deal.email,
-    mobile_no: deal.mobile_no,
-    deal_owner: {
-      label: deal.deal_owner && getUser(deal.deal_owner).full_name,
-      ...(deal.deal_owner && getUser(deal.deal_owner)),
-    },
-    modified: timestampCell(deal.modified),
-  }
-}
+const columns = computed(() => contactColumns)
 
 function getContactRowObject(contact) {
   return {
@@ -629,45 +558,6 @@ function getContactRowObject(contact) {
     modified: timestampCell(contact.modified),
   }
 }
-
-const dealColumns = [
-  {
-    label: __('Organization'),
-    key: 'organization',
-    width: '11rem',
-  },
-  {
-    label: __('Amount'),
-    key: 'deal_value',
-    align: 'right',
-    width: '9rem',
-  },
-  {
-    label: __('Status'),
-    key: 'status',
-    width: '10rem',
-  },
-  {
-    label: __('Email'),
-    key: 'email',
-    width: '12rem',
-  },
-  {
-    label: __('Mobile Number'),
-    key: 'mobile_no',
-    width: '11rem',
-  },
-  {
-    label: __('Deal Owner'),
-    key: 'deal_owner',
-    width: '10rem',
-  },
-  {
-    label: __('Last Modified'),
-    key: 'modified',
-    width: '8rem',
-  },
-]
 
 const contactColumns = [
   {

@@ -1,5 +1,5 @@
 <!--
-  Quick jump: one search box over Leads, Clients, Contacts, Tickets and Deals,
+  Quick jump: one search box over Leads, Clients, Contacts and Tickets,
   opened from the sidebar button or the "/" key anywhere outside a text field.
 
   The results always list, even when there is exactly one — jumping straight to
@@ -9,7 +9,7 @@
 
   All the searching and ranking is server-side in
   tender_crm.api.search.quick_jump (see that module for why it is one endpoint
-  over five doctypes rather than five link searches). This component only
+  over four doctypes rather than four link searches). This component only
   debounces, renders the ranked list with group headers, and handles the keys.
 -->
 <template>
@@ -43,7 +43,7 @@
             {{ __('Search failed. Try again.') }}
           </div>
           <div v-else-if="state === 'empty'" class="quickjump__empty">
-            {{ __('No lead, client, contact, ticket or deal matches “{0}”', [query.trim()]) }}
+            {{ __('No lead, client, contact or ticket matches “{0}”', [query.trim()]) }}
           </div>
 
           <template v-else>
