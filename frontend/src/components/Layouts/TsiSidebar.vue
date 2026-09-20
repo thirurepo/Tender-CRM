@@ -1,7 +1,8 @@
 <!--
   The Tender CRM design's nav sidebar: brand mark, grouped navigation, a
-  quick-jump affordance, and a user chip. Replaces AppSidebar.vue's dynamic
-  saved-views nav, which doesn't fit this design's fixed grouped layout.
+  quick-jump affordance, a user chip and a collapse toggle. Replaces
+  AppSidebar.vue's dynamic saved-views nav, which doesn't fit this design's
+  fixed grouped layout.
 
   "Activity Feed", "Leads", "Clients", "Tickets" and "Tasks" are live routes.
   The rest (Dashboard, Marketing, Reports) renders but does nothing yet,
@@ -13,87 +14,187 @@
   one opens the dialog on that page. It is collapsible because the list is long
   (up to ~19 pages for a manager) and would otherwise push the CRM links off
   a laptop screen.
+
+  Collapsed, the sidebar narrows to an icon rail. The inert placeholders drop
+  out of it rather than shrinking to icons that do nothing, and the settings
+  group becomes a single gear — a rail is for the things you can actually act
+  on, and every icon on it should survive being unlabelled.
 -->
 <template>
-  <aside class="tsi-sidebar">
+  <aside class="tsi-sidebar" :class="{ 'tsi-sidebar--collapsed': isCollapsed }">
     <div class="tsi-sidebar__brand">
-      <span class="tsi-sidebar__brand-name">CRM - Tender</span>
-      <span class="tsi-sidebar__brand-rule" />
+      <div class="tsi-sidebar__brand-row">
+        <BrandLogo v-model="brand" class="tsi-sidebar__brand-logo" />
+        <span v-if="!isCollapsed" class="tsi-sidebar__brand-name">
+          CRM - Tender
+        </span>
+      </div>
+      <span v-if="!isCollapsed" class="tsi-sidebar__brand-rule" />
     </div>
 
-    <button
-      class="tsi-sidebar__quickjump"
-      type="button"
-      @click="quickJumpOpen = true"
-    >
-      <span>{{ __('Quick jump') }}</span>
-      <span>/</span>
-    </button>
+    <Tooltip :text="__('Quick jump')" placement="right" :disabled="!isCollapsed">
+      <button
+        class="tsi-sidebar__quickjump"
+        type="button"
+        :aria-label="__('Quick jump')"
+        @click="quickJumpOpen = true"
+      >
+        <template v-if="isCollapsed">
+          <SearchIcon class="tsi-sidebar__icon" />
+        </template>
+        <template v-else>
+          <span>{{ __('Quick jump') }}</span>
+          <span>/</span>
+        </template>
+      </button>
+    </Tooltip>
 
     <QuickJump v-model="quickJumpOpen" />
 
     <nav class="tsi-sidebar__nav">
-      <div v-for="group in navGroups" :key="group.label" class="tsi-sidebar__group">
-        <div class="tsi-sidebar__group-label">{{ group.label }}</div>
-        <component
-          :is="item.route ? 'router-link' : 'span'"
-          v-for="item in group.items"
+      <!-- Collapsed: one flat rail of the routes, no group headings — there is
+           no width to label a group in, and the counts have nowhere to sit. -->
+      <template v-if="isCollapsed">
+        <Tooltip
+          v-for="item in railItems"
           :key="item.label"
-          :to="item.route ? { name: item.route } : undefined"
-          class="tsi-sidebar__item"
-          :class="{ 'tsi-sidebar__item--inert': !item.route }"
+          :text="__(item.label)"
+          placement="right"
         >
-          <span>{{ item.label }}</span>
-          <span v-if="item.count !== undefined" class="tsi-sidebar__count">
-            {{ item.count }}
-          </span>
-        </component>
-      </div>
+          <router-link
+            :to="{ name: item.route }"
+            class="tsi-sidebar__item tsi-sidebar__item--rail"
+            :aria-label="__(item.label)"
+          >
+            <component :is="item.icon" class="tsi-sidebar__icon" />
+          </router-link>
+        </Tooltip>
 
-      <div class="tsi-sidebar__group">
-        <button
-          type="button"
-          class="tsi-sidebar__group-label tsi-sidebar__group-toggle"
-          :aria-expanded="settingsExpanded"
-          @click="toggleSettings"
+        <Tooltip :text="__('Settings')" placement="right">
+          <button
+            type="button"
+            class="tsi-sidebar__item tsi-sidebar__item--rail tsi-sidebar__item--button"
+            :class="{ 'tsi-sidebar__item--active': showSettings }"
+            :aria-label="__('Settings')"
+            @click="openSettings(firstSettingsPage)"
+          >
+            <SettingsIcon class="tsi-sidebar__icon" />
+          </button>
+        </Tooltip>
+      </template>
+
+      <template v-else>
+        <div
+          v-for="group in navGroups"
+          :key="group.label"
+          class="tsi-sidebar__group"
         >
-          <span>{{ __('Settings') }}</span>
-          <span class="tsi-sidebar__chevron">{{ settingsExpanded ? '−' : '+' }}</span>
-        </button>
-        <template v-if="settingsExpanded">
-          <template v-for="section in settingsTabs" :key="section.label">
-            <div class="tsi-sidebar__subgroup-label">{{ section.label }}</div>
-            <button
-              v-for="page in section.items"
-              :key="page.label"
-              type="button"
-              class="tsi-sidebar__item tsi-sidebar__item--button"
-              :class="{ 'tsi-sidebar__item--active': isSettingsPageOpen(page.label) }"
-              @click="openSettings(page.label)"
-            >
-              <span>{{ page.label }}</span>
-            </button>
+          <div class="tsi-sidebar__group-label">{{ group.label }}</div>
+          <component
+            :is="item.route ? 'router-link' : 'span'"
+            v-for="item in group.items"
+            :key="item.label"
+            :to="item.route ? { name: item.route } : undefined"
+            class="tsi-sidebar__item"
+            :class="{ 'tsi-sidebar__item--inert': !item.route }"
+          >
+            <span class="tsi-sidebar__item-label">
+              <component
+                :is="item.icon"
+                v-if="item.icon"
+                class="tsi-sidebar__icon"
+              />
+              <span>{{ item.label }}</span>
+            </span>
+            <span v-if="item.count !== undefined" class="tsi-sidebar__count">
+              {{ item.count }}
+            </span>
+          </component>
+        </div>
+
+        <div class="tsi-sidebar__group">
+          <button
+            type="button"
+            class="tsi-sidebar__group-label tsi-sidebar__group-toggle"
+            :aria-expanded="settingsExpanded"
+            @click="toggleSettings"
+          >
+            <span>{{ __('Settings') }}</span>
+            <span class="tsi-sidebar__chevron">
+              {{ settingsExpanded ? '−' : '+' }}
+            </span>
+          </button>
+          <template v-if="settingsExpanded">
+            <template v-for="section in settingsTabs" :key="section.label">
+              <div class="tsi-sidebar__subgroup-label">{{ section.label }}</div>
+              <button
+                v-for="page in section.items"
+                :key="page.label"
+                type="button"
+                class="tsi-sidebar__item tsi-sidebar__item--button"
+                :class="{
+                  'tsi-sidebar__item--active': isSettingsPageOpen(page.label),
+                }"
+                @click="openSettings(page.label)"
+              >
+                <span>{{ page.label }}</span>
+              </button>
+            </template>
           </template>
-        </template>
-      </div>
+        </div>
+      </template>
     </nav>
 
     <div class="tsi-sidebar__user">
       <span class="tsi-sidebar__user-avatar">{{ initials }}</span>
-      <div>
+      <div v-if="!isCollapsed">
         <div class="tsi-sidebar__user-name">{{ user.full_name }}</div>
         <div class="tsi-sidebar__user-sub">Sales Unit · {{ salesUnit }}</div>
       </div>
     </div>
+
+    <Tooltip
+      :text="__('Expand sidebar')"
+      placement="right"
+      :disabled="!isCollapsed"
+    >
+      <button
+        type="button"
+        class="tsi-sidebar__collapse"
+        :aria-label="isCollapsed ? __('Expand sidebar') : __('Collapse sidebar')"
+        :aria-expanded="!isCollapsed"
+        @click="toggleCollapsed"
+      >
+        <CollapseSidebar
+          class="tsi-sidebar__icon"
+          :class="{ 'tsi-sidebar__icon--flipped': isCollapsed }"
+        />
+        <span v-if="!isCollapsed">{{ __('Collapse') }}</span>
+      </button>
+    </Tooltip>
   </aside>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
-import { createResource } from 'frappe-ui'
+import { createResource, Tooltip } from 'frappe-ui'
+import SearchIcon from '~icons/lucide/search'
+import ActivityIcon from '@/components/Icons/ActivityIcon.vue'
+import LeadsIcon from '@/components/Icons/LeadsIcon.vue'
+import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
+import TaskIcon from '@/components/Icons/TaskIcon.vue'
+import TicketsIcon from '@/components/Icons/TicketsIcon.vue'
+import DashboardIcon from '@/components/Icons/DashboardIcon.vue'
+import EmailIcon from '@/components/Icons/EmailIcon.vue'
+import WhatsAppIcon from '@/components/Icons/WhatsAppIcon.vue'
+import DocumentIcon from '@/components/Icons/DocumentIcon.vue'
+import SettingsIcon from '@/components/Icons/SettingsIcon.vue'
+import CollapseSidebar from '@/components/Icons/CollapseSidebar.vue'
+import BrandLogo from '@/components/BrandLogo.vue'
 import QuickJump from '@/components/QuickJump.vue'
 import { sessionStore } from '@/stores/session'
 import { usersStore } from '@/stores/users'
+import { getSettings } from '@/stores/settings'
 import { showSettings, activeSettingsPage } from '@/composables/settings'
 import { useSettingsTabs } from '@/composables/settingsTabs'
 
@@ -104,6 +205,10 @@ const quickJumpOpen = ref(false)
 const session = sessionStore()
 const { getUser } = usersStore()
 const user = computed(() => getUser(session.user))
+
+// Same source as the stock sidebar's logo, so a logo uploaded on the Brand
+// settings page shows up here too; CRMLogo is the fallback (see BrandLogo.vue).
+const { brand } = getSettings()
 
 const initials = computed(() =>
   (user.value.full_name || '')
@@ -118,6 +223,62 @@ const initials = computed(() =>
 // the Lead/Organization doctypes — there is no per-user sales unit yet, so
 // the chip reads generically until that's decided.
 const salesUnit = computed(() => 'All')
+
+// Both of these are layout preferences, not data, so they live in the
+// browser. Storage can throw (private mode, blocked site data); when it does
+// the sidebar just opens in its default state every time.
+const COLLAPSED_KEY = 'tsi_sidebar_collapsed'
+const SETTINGS_EXPANDED_KEY = 'tsi_sidebar_settings_expanded'
+
+function readFlag(key) {
+  try {
+    return localStorage.getItem(key) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeFlag(key, value) {
+  try {
+    localStorage.setItem(key, value ? '1' : '0')
+  } catch {
+    // Not persisting a toggle is harmless; see readFlag().
+  }
+}
+
+const isCollapsed = ref(readFlag(COLLAPSED_KEY))
+const settingsExpanded = ref(readFlag(SETTINGS_EXPANDED_KEY))
+
+function toggleCollapsed() {
+  isCollapsed.value = !isCollapsed.value
+  writeFlag(COLLAPSED_KEY, isCollapsed.value)
+}
+
+function toggleSettings() {
+  settingsExpanded.value = !settingsExpanded.value
+  writeFlag(SETTINGS_EXPANDED_KEY, settingsExpanded.value)
+}
+
+// The same permission-filtered list the dialog renders, so a non-manager sees
+// only the pages they can actually open (Profile, Preferences, Templates, ...).
+const settingsTabs = useSettingsTabs()
+
+// What the dialog itself opens on when nothing else is chosen — the rail's
+// gear has no page of its own to name.
+const firstSettingsPage = computed(
+  () => settingsTabs.value[0]?.items[0]?.label || '',
+)
+
+// Settings.vue watches activeSettingsPage and switches its right pane to the
+// matching page, so setting both refs is all "open on this page" takes.
+function openSettings(label) {
+  activeSettingsPage.value = label
+  showSettings.value = true
+}
+
+function isSettingsPageOpen(label) {
+  return showSettings.value && activeSettingsPage.value === label
+}
 
 const leadCount = createResource({
   url: 'frappe.client.get_count',
@@ -160,77 +321,72 @@ const recentActivityCount = createResource({
   transform: (value) => value ?? 0,
 })
 
-// The same permission-filtered list the dialog renders, so a non-manager sees
-// only the pages they can actually open (Profile, Preferences, Templates, ...).
-const settingsTabs = useSettingsTabs()
-
-// Collapsed by default; remembered per browser because it is a layout
-// preference, not data. Storage can throw (private mode, blocked site data),
-// in which case the group simply starts collapsed every time.
-const SETTINGS_EXPANDED_KEY = 'tsi_sidebar_settings_expanded'
-const settingsExpanded = ref(readSettingsExpanded())
-
-function readSettingsExpanded() {
-  try {
-    return localStorage.getItem(SETTINGS_EXPANDED_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-function toggleSettings() {
-  settingsExpanded.value = !settingsExpanded.value
-  try {
-    localStorage.setItem(SETTINGS_EXPANDED_KEY, settingsExpanded.value ? '1' : '0')
-  } catch {
-    // Not persisting the toggle is harmless; see readSettingsExpanded().
-  }
-}
-
-// Settings.vue watches activeSettingsPage and switches its right pane to the
-// matching page, so setting both refs is all "open on this page" takes.
-function openSettings(label) {
-  activeSettingsPage.value = label
-  showSettings.value = true
-}
-
-function isSettingsPageOpen(label) {
-  return showSettings.value && activeSettingsPage.value === label
-}
-
 const navGroups = computed(() => [
   {
     label: 'CRM',
     items: [
       {
         label: 'Activity Feed',
+        icon: ActivityIcon,
         count: recentActivityCount.data ?? '…',
         route: 'Activity Feed',
       },
-      { label: 'Leads', count: leadCount.data ?? '…', route: 'Leads' },
-      { label: 'Clients', count: clientCount.data ?? '…', route: 'Organizations' },
-      { label: 'Tasks', count: taskCount.data ?? '…', route: 'Tasks' },
-      { label: 'Tickets', count: ticketCount.data ?? '…', route: 'Tickets' },
+      {
+        label: 'Leads',
+        icon: LeadsIcon,
+        count: leadCount.data ?? '…',
+        route: 'Leads',
+      },
+      {
+        label: 'Clients',
+        icon: OrganizationsIcon,
+        count: clientCount.data ?? '…',
+        route: 'Organizations',
+      },
+      {
+        label: 'Tasks',
+        icon: TaskIcon,
+        count: taskCount.data ?? '…',
+        route: 'Tasks',
+      },
+      {
+        label: 'Tickets',
+        icon: TicketsIcon,
+        count: ticketCount.data ?? '…',
+        route: 'Tickets',
+      },
     ],
   },
   {
     label: 'Dashboard',
     items: [
-      { label: 'Main' },
-      { label: 'Leads' },
-      { label: 'Clients' },
-      { label: 'Hours' },
+      { label: 'Main', icon: DashboardIcon },
+      { label: 'Leads', icon: LeadsIcon },
+      { label: 'Clients', icon: OrganizationsIcon },
+      { label: 'Hours', icon: DashboardIcon },
     ],
   },
   {
     label: 'Marketing',
-    items: [{ label: 'Email campaign' }, { label: 'WhatsApp' }],
+    items: [
+      { label: 'Email campaign', icon: EmailIcon },
+      { label: 'WhatsApp', icon: WhatsAppIcon },
+    ],
   },
   {
     label: 'Reports',
-    items: [{ label: 'Weekly' }, { label: 'Clients' }],
+    items: [
+      { label: 'Weekly', icon: DocumentIcon },
+      { label: 'Clients', icon: DocumentIcon },
+    ],
   },
 ])
+
+// Only the routed entries: an icon rail of inert placeholders would be a row
+// of icons that look clickable and aren't.
+const railItems = computed(() =>
+  navGroups.value.flatMap((group) => group.items.filter((item) => item.route)),
+)
 </script>
 
 <style scoped>
@@ -245,10 +401,32 @@ const navGroups = computed(() => [
   flex-direction: column;
   font-family: var(--tsi-font-body);
   color: var(--tsi-color-text);
+  transition: width 150ms ease-in-out;
+}
+.tsi-sidebar--collapsed {
+  width: 56px;
 }
 
 .tsi-sidebar__brand {
   padding: var(--tsi-space-4) var(--tsi-space-3) var(--tsi-space-3);
+}
+.tsi-sidebar--collapsed .tsi-sidebar__brand {
+  padding: var(--tsi-space-3) 0;
+}
+.tsi-sidebar__brand-row {
+  display: flex;
+  align-items: center;
+  gap: var(--tsi-space-2);
+}
+.tsi-sidebar--collapsed .tsi-sidebar__brand-row {
+  justify-content: center;
+}
+.tsi-sidebar__brand-logo {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: var(--tsi-radius-sm);
+  overflow: hidden;
 }
 .tsi-sidebar__brand-name {
   display: block;
@@ -277,11 +455,23 @@ const navGroups = computed(() => [
   color: var(--tsi-color-neutral-700);
   cursor: pointer;
 }
+.tsi-sidebar--collapsed .tsi-sidebar__quickjump {
+  margin: 0 auto var(--tsi-space-2);
+  width: 32px;
+  justify-content: center;
+}
 
 .tsi-sidebar__nav {
   flex: 1;
   overflow-y: auto;
   padding: 0 var(--tsi-space-2);
+}
+.tsi-sidebar--collapsed .tsi-sidebar__nav {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 .tsi-sidebar__group {
   margin-bottom: var(--tsi-space-4);
@@ -320,6 +510,26 @@ const navGroups = computed(() => [
 .tsi-sidebar__item--inert:hover {
   background: none;
 }
+.tsi-sidebar__item-label {
+  display: flex;
+  align-items: center;
+  gap: var(--tsi-space-2);
+  min-width: 0;
+}
+.tsi-sidebar__item--rail {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+}
+.tsi-sidebar__icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.tsi-sidebar__icon--flipped {
+  transform: rotateY(180deg);
+}
 .tsi-sidebar__group-toggle {
   display: flex;
   justify-content: space-between;
@@ -350,6 +560,9 @@ const navGroups = computed(() => [
   font-family: inherit;
   text-align: left;
 }
+.tsi-sidebar__item--rail.tsi-sidebar__item--button {
+  width: 32px;
+}
 .tsi-sidebar__item--active {
   background: var(--tsi-color-accent-100);
   color: var(--tsi-color-accent-700);
@@ -366,6 +579,10 @@ const navGroups = computed(() => [
   gap: var(--tsi-space-2);
   padding: var(--tsi-space-3);
   border-top: 1px solid var(--tsi-color-divider);
+}
+.tsi-sidebar--collapsed .tsi-sidebar__user {
+  justify-content: center;
+  padding: var(--tsi-space-2) 0;
 }
 .tsi-sidebar__user-avatar {
   width: 28px;
@@ -387,5 +604,28 @@ const navGroups = computed(() => [
 .tsi-sidebar__user-sub {
   font-size: 11px;
   color: var(--tsi-color-neutral-600);
+}
+
+.tsi-sidebar__collapse {
+  display: flex;
+  align-items: center;
+  gap: var(--tsi-space-2);
+  width: 100%;
+  padding: var(--tsi-space-2) var(--tsi-space-3);
+  border: 0;
+  border-top: 1px solid var(--tsi-color-divider);
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--tsi-color-neutral-600);
+  cursor: pointer;
+}
+.tsi-sidebar--collapsed .tsi-sidebar__collapse {
+  justify-content: center;
+  padding: var(--tsi-space-2) 0;
+}
+.tsi-sidebar__collapse:hover {
+  background: var(--tsi-color-bg);
+  color: var(--tsi-color-text);
 }
 </style>
