@@ -26,6 +26,19 @@
  },
  {
   "doctype": "Custom Field",
+  "name": "CRM Deal-tsi_disabled",
+  "dt": "CRM Deal",
+  "fieldname": "tsi_disabled",
+  "label": "Deactivated",
+  "fieldtype": "Check",
+  "default": "0",
+  "no_copy": 1,
+  "insert_after": "status",
+  "description": "Hides this deal from the Deals list and kanban without deleting it.",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
   "name": "Sales Order-crm_deal",
   "dt": "Sales Order",
   "fieldname": "crm_deal",

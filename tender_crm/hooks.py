@@ -121,6 +121,7 @@ fixtures = [
         "filters": [["name", "in", [
             "CRM Deal-tsi_erpnext_company",
             "CRM Deal-tsi_erpnext_sales_order",
+            "CRM Deal-tsi_disabled",
             "Sales Order-crm_deal",
             "CRM Lead-tsi_skype",
             "CRM Lead-tsi_country",

@@ -11,6 +11,7 @@ tender_crm.patches.seed_tsi_lost_reasons
 tender_crm.patches.seed_tsi_territories
 tender_crm.patches.seed_tsi_sales_units
 tender_crm.patches.add_erpnext_link_fields
+tender_crm.patches.add_deal_deactivation_field
 tender_crm.patches.add_client_lead_fields
 tender_crm.patches.add_side_panel_layouts
 tender_crm.patches.configure_erpnext_crm_settings
