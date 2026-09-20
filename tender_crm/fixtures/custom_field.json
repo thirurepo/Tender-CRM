@@ -798,5 +798,28 @@
   "insert_after": "tsi_legacy_comment_id",
   "description": "Set only on rows imported from the legacy CRM's replies CSV — the parent Comment this one replied to. The CRM UI does not render nested threads; this preserves the relationship as data.",
   "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Territory-tsi_countries",
+  "dt": "CRM Territory",
+  "fieldname": "tsi_countries",
+  "label": "Countries",
+  "fieldtype": "Table",
+  "options": "CRM Territory Country",
+  "insert_after": "territory_manager",
+  "description": "Countries this territory covers. Organizations in it choose from these.",
+  "module": "Tender CRM"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-tsi_timezone",
+  "dt": "CRM Organization",
+  "fieldname": "tsi_timezone",
+  "label": "Timezone",
+  "fieldtype": "Data",
+  "insert_after": "tsi_country",
+  "description": "IANA timezone of the organization. Defaults to the country's first zone.",
+  "module": "Tender CRM"
  }
 ]

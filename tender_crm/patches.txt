@@ -44,3 +44,11 @@ tender_crm.patches.add_support_agent_role
 tender_crm.patches.add_ticket_side_panel_layouts
 tender_crm.patches.seed_ticket_settings
 tender_crm.patches.configure_ticket_email_intake
+
+# Territory -> Country -> Currency / Timezone (see territory_geo_schema.py).
+# Fields before the seed (it needs CRM Territory-tsi_countries) and before the
+# side panel patch (which references CRM Organization-tsi_timezone).
+tender_crm.patches.add_territory_geo_fields
+tender_crm.patches.add_territory_geo_form_scripts
+tender_crm.patches.seed_territory_countries
+tender_crm.patches.add_organization_geo_side_panel

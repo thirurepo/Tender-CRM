@@ -107,6 +107,12 @@ add_to_apps_screen = [
 # ensure_disabled_flag_fields / ensure_form_scripts / ensure_client_form_scripts
 # for an already-migrated site.
 #
+# CRM Territory-tsi_countries (the countries a territory covers), CRM
+# Organization-tsi_timezone and the "TSI Client Territory Geo" form script carry
+# the territory -> country -> currency/timezone rules (see territory_geo_schema.py);
+# also created by tender_crm.setup.ensure_territory_geo_fields /
+# ensure_territory_geo_form_scripts for an already-migrated site.
+#
 # The Contact-tsi_* fields carry the legacy client-contact import's schema
 # (see contact_import_schema.py); the Comment-tsi_legacy_comment_id/
 # tsi_reply_to_comment pair carries the legacy comment/reply import's (see
@@ -177,6 +183,8 @@ fixtures = [
             "CRM Organization-tsi_referred_by",
             "CRM Organization-tsi_client_since",
             "CRM Organization-tsi_developers",
+            "CRM Organization-tsi_timezone",
+            "CRM Territory-tsi_countries",
             "Comment-tsi_note_type",
             "Contact-tsi_organization",
             "Contact-tsi_legacy_primary_email",
@@ -199,6 +207,7 @@ fixtures = [
         "filters": [["name", "in", [
             "TSI Lead Country, State and Master Filters",
             "TSI Client Country/State Filter",
+            "TSI Client Territory Geo",
         ]]]
     },
 ]
@@ -245,6 +254,16 @@ doc_events = {
             "tender_crm.crm_overrides.lead_import.stamp_status_change",
             "tender_crm.crm_overrides.lead_import.stamp_converted_date",
         ],
+    },
+    # Territory -> Country -> Currency / Timezone (crm_overrides/territory_geo.py).
+    # Server-side backstop for what the SPA form script does interactively, so
+    # imports and API writes get the same defaults. Only the duplicate-country and
+    # wrong-timezone checks can raise, and both concern the document being saved.
+    "CRM Territory": {
+        "validate": "tender_crm.crm_overrides.territory_geo.validate_territory",
+    },
+    "CRM Organization": {
+        "validate": "tender_crm.crm_overrides.territory_geo.apply_organization_defaults",
     },
     "CRM Deal": {
         # "Convert to client" goes through crm's convert_to_deal, which never
