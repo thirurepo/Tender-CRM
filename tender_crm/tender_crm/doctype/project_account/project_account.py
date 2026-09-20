@@ -9,6 +9,10 @@
 # staticmethods is the whole price of admission for the list, filter, sort and
 # group-by views — the same arrangement Ticket uses (see ticket/ticket.py).
 #
+# The Credit / Discount table records free or discounted hours given to the
+# client on this account (see project_account_credit_discount/), with its total
+# kept in `total_credit_discount_hours`.
+#
 # Comments, tasks, notes and attachments need nothing here: they attach to any
 # document by (reference_doctype, reference_docname) or attached_to_doctype. The
 # one thing crm cannot do for us is assemble them into a timeline, because
@@ -18,7 +22,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import getdate, today
+from frappe.utils import flt, getdate, today
 
 
 class ProjectAccount(Document):
@@ -26,6 +30,7 @@ class ProjectAccount(Document):
         self.apply_default_status()
         self.check_dates()
         self.stamp_closed_date()
+        self.total_credit_discounts()
 
     def apply_default_status(self):
         """Give a new account the first live status rather than leaving it blank.
@@ -85,10 +90,21 @@ class ProjectAccount(Document):
         elif not self.is_new():
             self.closed_date = None
 
+    def total_credit_discounts(self):
+        """Keep the read-only total in step with the Credit / Discount rows.
+
+        Recomputed on every save rather than only when a row changes, so a total
+        can never drift from its rows. Rounded to the field's own precision so
+        the stored figure is the one the user sees.
+        """
+        self.total_credit_discount_hours = flt(
+            sum(flt(row.hours) for row in self.credit_discounts), 2
+        )
+
     @staticmethod
     def get_non_filterable_fields():
-        """Nothing here is unfilterable; crm just requires the method."""
-        return []
+        """The table cannot be a list filter; crm just requires the method."""
+        return ["credit_discounts"]
 
     @staticmethod
     def default_list_data():
