@@ -4,10 +4,14 @@
   AppSidebar.vue's dynamic saved-views nav, which doesn't fit this design's
   fixed grouped layout.
 
-  "Activity Feed", "Leads", "Clients", "Tickets" and "Tasks" are live routes.
-  The rest (Dashboard, Marketing, Reports) renders but does nothing yet,
-  matching the plan's decision to keep them present-but-inert rather than hide
-  them.
+  "Activity Feed", "Leads", "Clients", "Deals", "Contacts", "Notes", "Call
+  Logs", "Tasks" and "Tickets" are live routes, as is Dashboard's "Main". This
+  sidebar replaced stock AppSidebar on desktop, so it also has to carry what
+  AppSidebar gave every user and the design had dropped: the notifications
+  bell (its panel is mounted by DesktopLayout) and the user menu (logout, theme,
+  apps switcher) behind the user chip. The remaining Dashboard items,
+  Marketing and Reports render but do nothing yet, matching the plan's decision
+  to keep them present-but-inert rather than hide them.
 
   The "Settings" group at the foot of the nav is different in kind: its items
   are not routes but pages of the Settings dialog (Settings.vue), and clicking
@@ -70,6 +74,19 @@
           </router-link>
         </Tooltip>
 
+        <Tooltip :text="__('Notifications')" placement="right">
+          <button
+            id="notifications-btn"
+            type="button"
+            class="tsi-sidebar__item tsi-sidebar__item--rail tsi-sidebar__item--button tsi-sidebar__bell"
+            :aria-label="__('Notifications')"
+            @click="toggleNotificationPanel"
+          >
+            <NotificationsIcon class="tsi-sidebar__icon" />
+            <span v-if="unreadNotificationsCount" class="tsi-sidebar__dot" />
+          </button>
+        </Tooltip>
+
         <Tooltip :text="__('Settings')" placement="right">
           <button
             type="button"
@@ -84,6 +101,24 @@
       </template>
 
       <template v-else>
+        <!-- id is load-bearing: Notifications.vue's click-outside handler
+             ignores #notifications-btn, without which clicking the bell while
+             the panel is open would close it and then immediately reopen it. -->
+        <button
+          id="notifications-btn"
+          type="button"
+          class="tsi-sidebar__item tsi-sidebar__item--button"
+          @click="toggleNotificationPanel"
+        >
+          <span class="tsi-sidebar__item-label">
+            <NotificationsIcon class="tsi-sidebar__icon" />
+            <span>{{ __('Notifications') }}</span>
+          </span>
+          <span v-if="unreadNotificationsCount" class="tsi-sidebar__count">
+            {{ unreadNotificationsCount }}
+          </span>
+        </button>
+
         <div
           v-for="group in navGroups"
           :key="group.label"
@@ -145,13 +180,23 @@
       </template>
     </nav>
 
-    <div class="tsi-sidebar__user">
-      <span class="tsi-sidebar__user-avatar">{{ initials }}</span>
-      <div v-if="!isCollapsed">
-        <div class="tsi-sidebar__user-name">{{ user.full_name }}</div>
-        <div class="tsi-sidebar__user-sub">Sales Unit · {{ salesUnit }}</div>
-      </div>
-    </div>
+    <UserDropdown :isCollapsed="isCollapsed" placement="top-start">
+      <template #trigger>
+        <button
+          type="button"
+          class="tsi-sidebar__user"
+          :aria-label="__('User menu')"
+        >
+          <span class="tsi-sidebar__user-avatar">{{ initials }}</span>
+          <div v-if="!isCollapsed">
+            <div class="tsi-sidebar__user-name">{{ user.full_name }}</div>
+            <div class="tsi-sidebar__user-sub">
+              Sales Unit · {{ salesUnit }}
+            </div>
+          </div>
+        </button>
+      </template>
+    </UserDropdown>
 
     <Tooltip
       :text="__('Expand sidebar')"
@@ -184,6 +229,11 @@ import LeadsIcon from '@/components/Icons/LeadsIcon.vue'
 import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
 import TaskIcon from '@/components/Icons/TaskIcon.vue'
 import TicketsIcon from '@/components/Icons/TicketsIcon.vue'
+import DealsIcon from '@/components/Icons/DealsIcon.vue'
+import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
+import NoteIcon from '@/components/Icons/NoteIcon.vue'
+import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
+import NotificationsIcon from '@/components/Icons/NotificationsIcon.vue'
 import DashboardIcon from '@/components/Icons/DashboardIcon.vue'
 import EmailIcon from '@/components/Icons/EmailIcon.vue'
 import WhatsAppIcon from '@/components/Icons/WhatsAppIcon.vue'
@@ -192,9 +242,14 @@ import SettingsIcon from '@/components/Icons/SettingsIcon.vue'
 import CollapseSidebar from '@/components/Icons/CollapseSidebar.vue'
 import BrandLogo from '@/components/BrandLogo.vue'
 import QuickJump from '@/components/QuickJump.vue'
+import UserDropdown from '@/components/UserDropdown.vue'
 import { sessionStore } from '@/stores/session'
 import { usersStore } from '@/stores/users'
 import { getSettings } from '@/stores/settings'
+import {
+  unreadNotificationsCount,
+  notificationsStore,
+} from '@/stores/notifications'
 import { showSettings, activeSettingsPage } from '@/composables/settings'
 import { useSettingsTabs } from '@/composables/settingsTabs'
 
@@ -203,6 +258,7 @@ import { useSettingsTabs } from '@/composables/settingsTabs'
 const quickJumpOpen = ref(false)
 
 const session = sessionStore()
+const { toggle: toggleNotificationPanel } = notificationsStore()
 const { getUser } = usersStore()
 const user = computed(() => getUser(session.user))
 
@@ -311,6 +367,28 @@ const taskCount = createResource({
   transform: (value) => value ?? 0,
 })
 
+// Deals, Notes and Call Logs get the same "how big is this thing?" chip as the
+// rest of the CRM group. Contacts deliberately does not: it is a lookup list
+// rather than a queue anyone works through, so a total would be noise.
+const dealCount = createResource({
+  url: 'frappe.client.get_count',
+  params: { doctype: 'CRM Deal' },
+  auto: true,
+  transform: (value) => value ?? 0,
+})
+const noteCount = createResource({
+  url: 'frappe.client.get_count',
+  params: { doctype: 'FCRM Note' },
+  auto: true,
+  transform: (value) => value ?? 0,
+})
+const callLogCount = createResource({
+  url: 'frappe.client.get_count',
+  params: { doctype: 'CRM Call Log' },
+  auto: true,
+  transform: (value) => value ?? 0,
+})
+
 // Unlike the four counts above — which answer "how big is this thing?" — this
 // one answers "is anything happening?", so it is a 24-hour window rather than a
 // total. A lifetime activity count would be a number nobody can act on.
@@ -344,6 +422,17 @@ const navGroups = computed(() => [
         route: 'Organizations',
       },
       {
+        label: 'Deals',
+        icon: DealsIcon,
+        count: dealCount.data ?? '…',
+        route: 'Deals',
+      },
+      {
+        label: 'Contacts',
+        icon: ContactsIcon,
+        route: 'Contacts',
+      },
+      {
         label: 'Tasks',
         icon: TaskIcon,
         count: taskCount.data ?? '…',
@@ -355,12 +444,24 @@ const navGroups = computed(() => [
         count: ticketCount.data ?? '…',
         route: 'Tickets',
       },
+      {
+        label: 'Notes',
+        icon: NoteIcon,
+        count: noteCount.data ?? '…',
+        route: 'Notes',
+      },
+      {
+        label: 'Call Logs',
+        icon: PhoneIcon,
+        count: callLogCount.data ?? '…',
+        route: 'Call Logs',
+      },
     ],
   },
   {
     label: 'Dashboard',
     items: [
-      { label: 'Main', icon: DashboardIcon },
+      { label: 'Main', icon: DashboardIcon, route: 'Dashboard' },
       { label: 'Leads', icon: LeadsIcon },
       { label: 'Clients', icon: OrganizationsIcon },
       { label: 'Hours', icon: DashboardIcon },
@@ -563,6 +664,19 @@ const railItems = computed(() =>
 .tsi-sidebar__item--rail.tsi-sidebar__item--button {
   width: 32px;
 }
+.tsi-sidebar__bell {
+  position: relative;
+}
+/* Unread marker on the collapsed rail, where the count chip has no room. */
+.tsi-sidebar__dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tsi-color-accent-700);
+}
 .tsi-sidebar__item--active {
   background: var(--tsi-color-accent-100);
   color: var(--tsi-color-accent-700);
@@ -574,6 +688,13 @@ const railItems = computed(() =>
 }
 
 .tsi-sidebar__user {
+  /* Now a <button> (it opens the user menu), so reset the native chrome. */
+  width: 100%;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: var(--tsi-space-2);
@@ -583,6 +704,9 @@ const railItems = computed(() =>
 .tsi-sidebar--collapsed .tsi-sidebar__user {
   justify-content: center;
   padding: var(--tsi-space-2) 0;
+}
+.tsi-sidebar__user:hover {
+  background: var(--tsi-color-bg);
 }
 .tsi-sidebar__user-avatar {
   width: 28px;

@@ -1,46 +1,52 @@
 <template>
   <Dropdown :options="dropdownItems" v-bind="$attrs">
     <template #default="{ open }">
-      <button
-        class="flex h-12 items-center rounded-md py-2 duration-300 ease-in-out"
-        :class="
-          isCollapsed
-            ? 'w-auto px-0'
-            : open
-              ? 'w-full px-2 bg-surface-elevation-3 shadow-sm'
-              : 'w-full px-2 hover:bg-surface-gray-2'
-        "
-      >
-        <BrandLogo v-model="brand" class="h-8 max-w-16 flex-shrink-0" />
-        <div
-          class="flex flex-1 flex-col text-left duration-300 ease-in-out truncate"
+      <!-- TsiSidebar supplies its own trigger (the user chip at the foot of the
+           sidebar) but still wants this exact menu — logout, theme, apps
+           switcher, settings — so the menu is reused rather than rebuilt.
+           Without the slot this renders the stock brand-plus-name button. -->
+      <slot name="trigger" :open="open">
+        <button
+          class="flex h-12 items-center rounded-md py-2 duration-300 ease-in-out"
           :class="
             isCollapsed
-              ? 'ml-0 w-0 overflow-hidden opacity-0'
-              : 'ml-2 w-auto opacity-100'
+              ? 'w-auto px-0'
+              : open
+                ? 'w-full px-2 bg-surface-elevation-3 shadow-sm'
+                : 'w-full px-2 hover:bg-surface-gray-2'
           "
         >
-          <div class="text-base-medium leading-none text-ink-gray-9 truncate">
-            {{ __(brand.name || 'CRM') }}
+          <BrandLogo v-model="brand" class="h-8 max-w-16 flex-shrink-0" />
+          <div
+            class="flex flex-1 flex-col text-left duration-300 ease-in-out truncate"
+            :class="
+              isCollapsed
+                ? 'ml-0 w-0 overflow-hidden opacity-0'
+                : 'ml-2 w-auto opacity-100'
+            "
+          >
+            <div class="text-base-medium leading-none text-ink-gray-9 truncate">
+              {{ __(brand.name || 'CRM') }}
+            </div>
+            <div class="mt-1 text-sm leading-none text-ink-gray-7 truncate">
+              {{ user.full_name }}
+            </div>
           </div>
-          <div class="mt-1 text-sm leading-none text-ink-gray-7 truncate">
-            {{ user.full_name }}
+          <div
+            class="duration-300 ease-in-out"
+            :class="
+              isCollapsed
+                ? 'ml-0 w-0 overflow-hidden opacity-0'
+                : 'ml-2 w-auto opacity-100'
+            "
+          >
+            <span
+              class="lucide-chevron-down size-4 text-ink-gray-5"
+              aria-hidden="true"
+            />
           </div>
-        </div>
-        <div
-          class="duration-300 ease-in-out"
-          :class="
-            isCollapsed
-              ? 'ml-0 w-0 overflow-hidden opacity-0'
-              : 'ml-2 w-auto opacity-100'
-          "
-        >
-          <span
-            class="lucide-chevron-down size-4 text-ink-gray-5"
-            aria-hidden="true"
-          />
-        </div>
-      </button>
+        </button>
+      </slot>
     </template>
   </Dropdown>
 </template>

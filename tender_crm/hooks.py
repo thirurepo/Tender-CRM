@@ -26,8 +26,8 @@ app_license = "mit"
 required_apps = ["frappe/crm"]
 
 # Serves the Tender CRM design's forked frontend (../frontend/) at /tsi-crm.
-# Purely additive: crm's own /crm route (apps/crm/crm/hooks.py) is untouched
-# and keeps working exactly as before.
+# crm's own /crm route (apps/crm/crm/hooks.py) is left untouched; it is retired
+# by the website_redirects entry below rather than by editing crm.
 website_route_rules = [
     # Frappe's default www-page resolution matches a bare path straight to a
     # same-named file (this is how crm's own bare /crm works, with no rule at
@@ -37,6 +37,47 @@ website_route_rules = [
     # not just the sub-path one below.
     {"from_route": "/tsi-crm", "to_route": "tsi_crm"},
     {"from_route": "/tsi-crm/<path:app_path>", "to_route": "tsi_crm"},
+]
+
+# Two CRM UIs at two URLs is confusing, so stock /crm hands everything to the
+# TSI design: /crm/<anything> becomes /tsi-crm/<anything>. This is a pure prefix
+# swap — the forked frontend keeps every stock route name and path (leads, deals,
+# contacts, organizations, notes, tasks, call-logs, dashboard, data-import ...),
+# so bookmarks, desk "Open in Portal" links and post-login redirects that crm
+# itself emits all land on the equivalent page.
+#
+# website_redirects is consulted by frappe's path resolver before route rules and
+# before same-named www files, so it wins over crm's own /crm/<path:app_path>
+# rule and its bare www/crm.py match without touching apps/crm. The resolver
+# hands the regex the path with no leading or trailing slash, and `crm(/.*)?`
+# requires "/" or end-of-path right after "crm" — that is what keeps
+# /crm-form/<route> (crm's public lead-capture embed, a different feature) out.
+#
+# 302, not 301: browsers cache a 301 indefinitely, which would make this
+# awkward to back out. Results are cached in Redis, so `bench clear-cache`
+# after changing this.
+website_redirects = [
+    {
+        "source": r"/crm(/.*)?",
+        "target": r"/tsi-crm\1",
+        "redirect_http_status": 302,
+        "forward_query_parameters": True,
+    },
+]
+
+# Apps screen (/apps) entry for the TSI UI. Frappe resolves a user's landing
+# route from the entry whose `name` equals their default_app, so registering it
+# is what lets tender_crm be chosen as a default app at all. The stock `crm` tile
+# cannot be removed from here (hooks are read per app); it now redirects to
+# /tsi-crm anyway. Same permission gate as crm's own tile and www/tsi_crm.py.
+add_to_apps_screen = [
+    {
+        "name": "tender_crm",
+        "logo": "/assets/crm/images/logo.svg",
+        "title": "Tender CRM",
+        "route": "/tsi-crm",
+        "has_permission": "crm.api.check_app_permission",
+    },
 ]
 
 

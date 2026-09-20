@@ -59,6 +59,7 @@
 import ListRows from '@/components/ListViews/ListRows.vue'
 import { ListView, ListHeader, ListHeaderItem, ListRowItem } from 'frappe-ui'
 import { ref } from 'vue'
+import router from '@/router'
 
 defineProps({
   rows: { type: Array, required: true },
@@ -130,7 +131,9 @@ const viewLinkedDoc = (doc) => {
     default:
       break
   }
-  let base = '/crm'
+  // The SPA's own base path (/tsi-crm), not stock crm's /crm, which now only
+  // redirects here and would cost an extra hop.
+  let base = router.options.history.base
   if (openDesk) {
     base = '/app'
   }
