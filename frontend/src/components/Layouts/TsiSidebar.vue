@@ -26,7 +26,7 @@
       <div class="tsi-sidebar__brand-row">
         <BrandLogo v-model="brand" class="tsi-sidebar__brand-logo" />
         <span v-if="!isCollapsed" class="tsi-sidebar__brand-name">
-          CRM - Tender
+          CRM
         </span>
       </div>
       <span v-if="!isCollapsed" class="tsi-sidebar__brand-rule" />
