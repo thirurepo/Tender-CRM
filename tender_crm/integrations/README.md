@@ -17,4 +17,4 @@ automation wrote it.
 
 | File | Endpoints | Called from |
 | --- | --- | --- |
-| `support_mail.py` | `match_contacts(emails)`: the lead/client a support thread's external addresses belong to, plus its last few touches as LLM context. `post_support_summary(...)`: writes the thread's AI summary and 1–5 attention rank as a Comment on that lead/client, idempotent per conversation per night. | n8n "TSIERP - Support Mailbox Digest" (nightly, 23:00 IST). The mailbox is read by tsiconnect's `integrations/support_mailbox.py`. |
+| `support_mail.py` | `match_contacts(emails)`: the lead/client a support thread's external addresses belong to, plus its last few touches as LLM context. `post_support_summary(...)`: writes ONE Comment per lead/client per day: the AI summary of all that client's support mail, its highest 1–5 attention rank, and the threads it covers. Idempotent per record per day. | n8n "TSIERP - Support Mailbox Digest" (nightly, 23:00 IST). The mailbox is read by tsiconnect's `integrations/support_mailbox.py`. |
