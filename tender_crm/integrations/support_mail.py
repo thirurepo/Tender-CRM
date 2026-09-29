@@ -3,15 +3,17 @@
 # n8n's "TSIERP - Support Mailbox Digest" workflow reads a day of mail from
 # support@tendersoftware.in (through tsiconnect's integrations/support_mailbox.py,
 # which owns the Microsoft Graph access), asks an LLM to summarise and rank each
-# conversation, and calls the two endpoints here:
+# conversation, then summarises each client's whole day, and calls the two
+# endpoints here:
 #
 #   match_contacts(emails)  — which lead or client is this thread about, and what
 #                             has happened with them lately? The answer is the
 #                             context the LLM ranks against ("third complaint
 #                             this month").
-#   post_support_summary(…) — writes that summary onto the lead/client as a
-#                             Comment, so it shows up in the record's Activity and
-#                             Comments tabs next to everything else.
+#   post_support_summary(…) — writes ONE Comment per lead/client per day with the
+#                             summary of all that client's support mail, so the
+#                             record's Activity tab gets one readable entry, not
+#                             one per email thread (Thiru, 2026-09-29).
 #
 # Lives in tender_crm, not tsiconnect, because it reads and writes CRM records.
 # The Graph side stays in tsiconnect and neither app imports the other, so the
@@ -36,7 +38,6 @@
 # is authored by the calling API user, so the timeline says honestly that the
 # automation wrote it.
 
-import hashlib
 import re
 from html import unescape
 from urllib.parse import quote, urlparse
@@ -67,11 +68,15 @@ RECENT_ACTIVITY_LIMIT = 8
 ACTIVITY_TEXT_CHARS = 300
 
 # Hidden in every digest comment so a rerun of the same night updates the
-# comment it wrote before, instead of stacking a duplicate. Comment.content has
-# ignore_xss_filter set, so the HTML comment survives the save. The Graph
-# conversationId (~150 chars of base64) is hashed down to keep the marker short
-# and LIKE-safe.
-MARKER_TEMPLATE = "<!-- support-digest:{conversation_key}:{digest_date} -->"
+# comment it wrote before, instead of stacking a duplicate. There is one entry
+# per record per day, so the date alone is the key; the record is already
+# fixed by reference_doctype/name. Comment.content has ignore_xss_filter set,
+# so the HTML comment survives the save.
+MARKER_TEMPLATE = "<!-- support-digest-day:{digest_date} -->"
+
+# Cap on the thread list under a client's entry. Beyond this the comment stops
+# being skimmable, and the digest email carries the full list anyway.
+MAX_THREADS_LISTED = 15
 
 
 # ---------------------------------------------------------------------------
@@ -355,12 +360,17 @@ def _tasks_and_notes(doctype, name):
 # ---------------------------------------------------------------------------
 
 @frappe.whitelist(methods=["POST"])
-def post_support_summary(doctype, name, conversation_id, digest_date, subject, rank, summary, action_needed=None):
-	"""Write (or refresh) one thread's digest summary as a Comment on the record.
+def post_support_summary(doctype, name, digest_date, rank, summary, threads=None, action_needed=None):
+	"""Write (or refresh) a client's one support-mail entry for the day.
 
-	Idempotent per conversation per digest date: the marker hidden in the
-	content finds the comment a previous run wrote, and it is updated in
-	place. So a manual rerun of a night's workflow never doubles the timeline.
+	`summary` is the day-level summary (up to 10 lines) n8n's second AI step
+	writes across all of the client's threads. `threads` is
+	[{subject, rank, status}], listed under the summary so the entry says what
+	it covers. `rank` is the client's highest thread rank for the day.
+
+	Idempotent per record per digest date: the hidden marker finds the entry
+	a previous run wrote, and it is updated in place. A manual rerun, or two
+	runs overlapping, never doubles the timeline.
 	"""
 	frappe.only_for("System Manager")
 
@@ -374,13 +384,12 @@ def post_support_summary(doctype, name, conversation_id, digest_date, subject, r
 		frappe.throw(_("digest_date must be YYYY-MM-DD"))
 	rank = min(max(cint(rank), 1), 5)
 
-	lines = frappe.parse_json(summary) if isinstance(summary, str) and summary.strip().startswith("[") else summary
-	if isinstance(lines, str):
-		lines = [line for line in lines.splitlines() if line.strip()]
-	lines = [str(line).strip() for line in (lines or []) if str(line).strip()][:10]
+	lines = _as_list(summary)
+	lines = [str(line).strip() for line in lines if str(line).strip()][:10]
+	thread_rows = [t for t in _as_list(threads) if isinstance(t, dict)][:MAX_THREADS_LISTED]
 
-	marker = MARKER_TEMPLATE.format(conversation_key=_conversation_key(conversation_id), digest_date=digest_date)
-	content = _render(marker, subject, rank, lines, action_needed)
+	marker = MARKER_TEMPLATE.format(digest_date=digest_date)
+	content = _render(marker, digest_date, rank, lines, thread_rows, action_needed)
 
 	existing = frappe.get_all(
 		"Comment",
@@ -411,22 +420,37 @@ def post_support_summary(doctype, name, conversation_id, digest_date, subject, r
 	return {"comment": comment.name, "action": "created"}
 
 
-def _conversation_key(conversation_id):
-	"""A short stable key for a Graph conversationId, safe inside a LIKE pattern."""
-	if not conversation_id:
-		frappe.throw(_("conversation_id is required"))
-	return hashlib.sha1(str(conversation_id).encode()).hexdigest()[:16]
+def _as_list(value):
+	"""Accept a JSON list, a Python list, or newline-separated text from n8n."""
+	if isinstance(value, str):
+		stripped = value.strip()
+		if stripped.startswith("["):
+			return frappe.parse_json(stripped) or []
+		return [line for line in stripped.splitlines() if line.strip()]
+	return list(value or [])
 
 
-def _render(marker, subject, rank, lines, action_needed):
+def _render(marker, digest_date, rank, lines, threads, action_needed):
 	esc = frappe.utils.escape_html
+	count = len(threads)
+	header = (
+		f"<p><b>📧 {_('Support mail')} {esc(digest_date)} — {_('Attention')} {rank}/5</b>"
+		+ (f" — {count} {_('thread') if count == 1 else _('threads')}" if count else "")
+		+ "</p>"
+	)
 	items = "".join(f"<li>{esc(line)}</li>" for line in lines)
+	thread_list = ""
+	if threads:
+		rows = "".join(
+			f"<li>[{min(max(cint(t.get('rank')), 1), 5)}/5] {esc(t.get('subject') or '')}"
+			+ (f" — {esc(t.get('status'))}" if t.get("status") else "")
+			+ "</li>"
+			for t in threads
+		)
+		thread_list = f"<p><b>{_('Threads')}:</b></p><ul>{rows}</ul>"
 	action = (
 		f"<p><b>{_('Action needed')}:</b> {esc(action_needed)}</p>"
 		if action_needed and str(action_needed).strip().lower() != "none"
 		else ""
 	)
-	return (
-		f"{marker}<p><b>📧 {_('Support mail')} — {_('Attention')} {rank}/5</b> — {esc(subject or '')}</p>"
-		f"<ul>{items}</ul>{action}"
-	)
+	return f"{marker}{header}<ul>{items}</ul>{action}{thread_list}"
